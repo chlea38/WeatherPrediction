@@ -5,12 +5,15 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ 266e9ab0-528a-11ec-0c80-f9f66ea8d7ab
-using DataFrames, CSV, Plots, OpenML, StatsPlots
+using PlutoUI,DataFrames, CSV, Plots, OpenML, StatsPlots
+
+# ╔═╡ 61e6f172-dc93-4b11-a2d5-d37c04352ba2
+PlutoUI.TableOfContents(title="Table of contents")
 
 # ╔═╡ e642c2da-c034-4115-859d-0d2e1190bcf0
 md"""
-## Data exploration
-#### Raw data
+# Data exploration
+## Raw data
 In this part, we will explore the raw data. We first import the CSV file for **training data** and visualize it using _Dataframe_.  
 """
 
@@ -19,7 +22,7 @@ training_data = CSV.read(joinpath(@__DIR__, "..",  "data", "trainingdata.csv"), 
 
 # ╔═╡ 7130247e-2b88-4c4a-b349-98513f61cf16
 md"""
-#### Cleaning
+## Cleaning
 In order to use the data, we need to remove points where some data are missing, using _dropmissing._
 """
 
@@ -28,8 +31,8 @@ weather = dropmissing(training_data)
 
 # ╔═╡ 5aab8c9b-ed87-4548-84d9-bd7c1e49c498
 md"""
-#### Data visualization
-##### For one station
+## Data visualization
+### For one station
 Here we plot each weather element of the data for one station to visulaly explore the data and **find correlation** between data.  
 """
 
@@ -45,7 +48,7 @@ For example, we can observe that the *sunshine* and the *radiation* are strongly
 
 # ╔═╡ 4b4a217d-d89e-40e7-8969-de8ae96e30c1
 md"""
-##### For one quantity accross different stations
+### For one quantity accross different stations
 Here we plot each weather quantity to find **correlation between stations.** 
 """
 
@@ -59,7 +62,7 @@ Observations: ...
 
 # ╔═╡ 9965aa5a-4d80-4e15-acbd-ca910aa43c10
 md"""
-##### For one station at different times
+### For one station at different times
 """
 
 # ╔═╡ 29a133e8-e64b-4da4-b09c-f64d02533ac1
@@ -67,12 +70,12 @@ md"""
 
 # ╔═╡ 2c167ddf-1192-445c-85db-f705cbf4e0e2
 md"""
-##### For different quantity relative to precipitation in pully
+### For different quantity relative to precipitation in pully
 """
 
 # ╔═╡ f76f1eb9-3091-4682-a94f-ae34f27ce401
 md"""
-#### Sub data sets
+## Sub data sets
 Create dataframes with only interesting data
 """
 
@@ -83,6 +86,7 @@ CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 OpenML = "8b6db2d4-7670-4922-a472-f9537c81ab66"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 
 [compat]
@@ -90,6 +94,7 @@ CSV = "~0.9.11"
 DataFrames = "~1.2.2"
 OpenML = "~0.2.0"
 Plots = "~1.24.3"
+PlutoUI = "~0.7.21"
 StatsPlots = "~0.14.29"
 """
 
@@ -108,6 +113,12 @@ deps = ["LinearAlgebra"]
 git-tree-sha1 = "485ee0867925449198280d4af84bdb46a2a404d0"
 uuid = "621f4979-c628-5d54-868e-fcf4e3e8185c"
 version = "1.0.1"
+
+[[AbstractPlutoDingetjes]]
+deps = ["Pkg"]
+git-tree-sha1 = "abb72771fd8895a7ebd83d5632dc4b989b022b5b"
+uuid = "6e696c72-6542-2067-7265-42206c756150"
+version = "1.1.2"
 
 [[Adapt]]
 deps = ["LinearAlgebra"]
@@ -411,9 +422,9 @@ version = "0.21.0+0"
 
 [[Glib_jll]]
 deps = ["Artifacts", "Gettext_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Libiconv_jll", "Libmount_jll", "PCRE_jll", "Pkg", "Zlib_jll"]
-git-tree-sha1 = "7bf67e9a481712b3dbe9cb3dac852dc4b1162e02"
+git-tree-sha1 = "74ef6288d071f58033d54fd6708d4bc23a8b8972"
 uuid = "7746bdde-850d-59dc-9ae8-88ece973131d"
-version = "2.68.3+0"
+version = "2.68.3+1"
 
 [[Graphite2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -434,9 +445,26 @@ version = "0.9.17"
 
 [[HarfBuzz_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "Graphite2_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg"]
-git-tree-sha1 = "8a954fed8ac097d5be04921d595f741115c1b2ad"
+git-tree-sha1 = "129acf094d168394e80ee1dc4bc06ec835e510a3"
 uuid = "2e76f6c2-a576-52d4-95c1-20adfe4de566"
-version = "2.8.1+0"
+version = "2.8.1+1"
+
+[[Hyperscript]]
+deps = ["Test"]
+git-tree-sha1 = "8d511d5b81240fc8e6802386302675bdf47737b9"
+uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
+version = "0.0.4"
+
+[[HypertextLiteral]]
+git-tree-sha1 = "2b078b5a615c6c0396c77810d92ee8c6f470d238"
+uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
+version = "0.9.3"
+
+[[IOCapture]]
+deps = ["Logging", "Random"]
+git-tree-sha1 = "f7be53659ab06ddc986428d3a9dcc95f6fa6705a"
+uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
+version = "0.2.2"
 
 [[IniFile]]
 deps = ["Test"]
@@ -785,6 +813,12 @@ deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers"
 git-tree-sha1 = "d73736030a094e8d24fdf3629ae980217bf1d59d"
 uuid = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 version = "1.24.3"
+
+[[PlutoUI]]
+deps = ["AbstractPlutoDingetjes", "Base64", "Dates", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "Markdown", "Random", "Reexport", "UUIDs"]
+git-tree-sha1 = "b68904528fd538f1cb6a3fbc44d2abdc498f9e8e"
+uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+version = "0.7.21"
 
 [[PooledArrays]]
 deps = ["DataAPI", "Future"]
@@ -1242,8 +1276,9 @@ version = "0.9.1+5"
 """
 
 # ╔═╡ Cell order:
-# ╟─e642c2da-c034-4115-859d-0d2e1190bcf0
 # ╠═266e9ab0-528a-11ec-0c80-f9f66ea8d7ab
+# ╠═61e6f172-dc93-4b11-a2d5-d37c04352ba2
+# ╟─e642c2da-c034-4115-859d-0d2e1190bcf0
 # ╠═c16c9251-e5aa-43e2-a6c3-8c4277d92f6e
 # ╟─7130247e-2b88-4c4a-b349-98513f61cf16
 # ╠═83ce6ef5-4094-4942-8213-07a21f1c8fdb
