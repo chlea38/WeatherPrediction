@@ -1,11 +1,11 @@
 ### A Pluto.jl notebook ###
-# v0.15.1
+# v0.17.2
 
 using Markdown
 using InteractiveUtils
 
 # ╔═╡ 266e9ab0-528a-11ec-0c80-f9f66ea8d7ab
-using PlutoUI,DataFrames, CSV, Plots, OpenML, StatsPlots
+using PlutoUI,DataFrames, CSV, Plots, OpenML, StatsPlots, Shuffle
 
 # ╔═╡ 61e6f172-dc93-4b11-a2d5-d37c04352ba2
 PlutoUI.TableOfContents(title="Table of contents")
@@ -18,7 +18,7 @@ In this part, we will explore the raw data. We first import the CSV file for **t
 """
 
 # ╔═╡ c16c9251-e5aa-43e2-a6c3-8c4277d92f6e
-training_data = CSV.read(joinpath(@__DIR__, "..",  "data", "trainingdata.csv"), DataFrame)
+data = CSV.read(joinpath(@__DIR__, "..",  "data", "trainingdata.csv"), DataFrame)
 
 # ╔═╡ 7130247e-2b88-4c4a-b349-98513f61cf16
 md"""
@@ -27,7 +27,7 @@ In order to use the data, we need to remove points where some data are missing, 
 """
 
 # ╔═╡ 83ce6ef5-4094-4942-8213-07a21f1c8fdb
-weather = dropmissing(training_data)
+weather = dropmissing(data)
 
 # ╔═╡ 5aab8c9b-ed87-4548-84d9-bd7c1e49c498
 md"""
@@ -48,16 +48,38 @@ For example, we can observe that the *sunshine* and the *radiation* are strongly
 
 # ╔═╡ 4b4a217d-d89e-40e7-8969-de8ae96e30c1
 md"""
-### For one quantity accross different stations
+### For each quantity accross different stations
 Here we plot each weather quantity to find **correlation between stations.** 
 """
 
 # ╔═╡ 4d94eda1-8e3e-4276-8a39-ce776f019ded
-@df weather corrplot([:ABO_radiation_1 :ENG_radiation_1 :LUZ_radiation_1 :NEU_radiation_1 :PUY_radiation_1 :ZER_radiation_1], grid = false, fillcolor = cgrad(), size = (1300, 1300))
+@df weather corrplot([:ABO_sunshine_2 :ENG_sunshine_2 :LUZ_sunshine_2 :NEU_sunshine_2 :PUY_sunshine_2 :ZER_sunshine_2], grid = false, fillcolor = cgrad(), size = (1300, 1300))
 
-# ╔═╡ fe4508f0-77bd-44ea-a933-0754047f4568
+# ╔═╡ 914ee24a-5004-45be-8b0e-ed6083cd6e95
+@df weather corrplot([:OTL_air_temp_3 :SIO_air_temp_3 :GVE_air_temp_3 :BAS_air_temp_3 :PIO_air_temp_3 :PUY_air_temp_3], grid = false, fillcolor = cgrad(), size = (1300, 1300))
+
+# ╔═╡ dfb0c653-8b61-4169-bed5-e676cca7de7f
+@df weather corrplot([:ZER_radiation_1 :SAM_radiation_1 :ALT_radiation_1 :INT_radiation_1 :CHU_radiation_1 :PUY_radiation_1], grid = false, fillcolor = cgrad(), size = (1300, 1300))
+
+# ╔═╡ 79454648-6a86-4caf-96e0-69a2946399a6
+@df weather corrplot([:ALT_delta_pressure_4 :DAV_delta_pressure_4 :NEU_delta_pressure_4 :SAM_delta_pressure_4 :LUZ_delta_pressure_4 :PUY_delta_pressure_4], grid = false, fillcolor = cgrad(), size = (1300, 1300))
+
+# ╔═╡ f440a965-99a7-47bc-a5bc-247c83798fb3
+@df weather corrplot([:INT_wind_direction_2 :SHA_wind_direction_2 :ZER_wind_direction_2 :CDF_wind_direction_2 :BAS_wind_direction_2 :PUY_wind_direction_2], grid = false, fillcolor = cgrad(), size = (1300, 1300))
+
+# ╔═╡ 48486212-6a70-4b42-b1d4-5b9bc22552bf
+@df weather corrplot([:ABO_wind_1 :BER_wind_1 :LUG_wind_1 :OTL_wind_1 :SIO_wind_1 :PUY_wind_1], grid = false, fillcolor = cgrad(), size = (1300, 1300))
+
+# ╔═╡ 4a32352d-8911-449b-a56a-b8b09a86fe31
 md"""
-Observations: ...
+**Observations**: across the different stations picked randomly, the measured quantities that seem to have a certain correlation are:
+- radiation (t=1)
+- air temperature (t=3)
+- delta pressure (t=4)
+
+It would thus be useful to find which stations have the highest dregree of correlation for these quantities. 
+
+Sunshine and wind direction clearly aren't correlated, but it can be interesting to look further into the wind parameter which isn't very clear.
 """
 
 # ╔═╡ 9965aa5a-4d80-4e15-acbd-ca910aa43c10
@@ -73,11 +95,54 @@ md"""
 ### For different quantity relative to precipitation in pully
 """
 
+# ╔═╡ ecefb21c-b051-4fc7-9e49-54c58b05750d
+@df weather corrplot([:PUY_radiation_1 :PUY_delta_pressure_1 :PUY_air_temp_1 :PUY_sunshine_1 :PUY_wind_1 :PUY_wind_direction_1], grid = false, fillcolor = cgrad(), size = (1300, 1300))
+
+# ╔═╡ bc64fe54-0199-4a19-bed5-e34da402dd74
+@df weather corrplot([:CDF_radiation_2 :CDF_delta_pressure_2 :CDF_air_temp_2 :CDF_sunshine_2 :CDF_wind_2 :CDF_wind_direction_2], grid = false, fillcolor = cgrad(), size = (1300, 1300))
+
+# ╔═╡ 493c2b64-47b8-4f8d-b83e-0cc16b2b1bed
+@df weather corrplot([:SAM_radiation_3 :SAM_delta_pressure_3 :SAM_air_temp_3 :SAM_sunshine_3 :SAM_wind_3 :SAM_wind_direction_3], grid = false, fillcolor = cgrad(), size = (1300, 1300))
+
+# ╔═╡ 1ee01037-5f62-41fd-8113-84388d862a6e
+@df weather corrplot([:ZER_radiation_4 :ZER_delta_pressure_4 :ZER_air_temp_4 :ZER_sunshine_4 :ZER_wind_4 :ZER_wind_direction_4], grid = false, fillcolor = cgrad(), size = (1300, 1300))
+
+# ╔═╡ 1fdc21c1-51da-437a-821e-f20146cd6306
+md"""
+Observations: Wether or not there are correlations betwen the different meausred parameters in a station seems to vary a lot from station to station.\
+-> SAM seems to have a strong correlation between its measurement of radiation with wind direction, wind, sunshine, and air temperature whereas its delta pressure is not correlated with any other measurement.\
+-> ZER only has some correlation between radiation, delta pressure and air temperature\
+-> PUY and CDF have some degree of correlation between radiation, sunshine and air temperature.
+"""
+
+# ╔═╡ 47d0766d-dba5-46d5-b813-80773bd4dfa2
+md"""
+## Separating the data
+Making a training and a validation set from the original data, with 70% being in the training set to find the parameters and 30% in the validation set to find the hyperparameters.\
+-> We could change this proportionnality of the split.\
+-> We could run this multiple times so the split is different...
+"""
+
+# ╔═╡ 8a6e0e08-2e4c-4bb7-b1ce-b3e7c7cdad1c
+function partitionTrainValidation(data, at = 0.7) #randomly split data into two sets with at% in train
+    n = nrow(data)
+    idx = shuffle(1:n)
+    train_idx = view(idx, 1:floor(Int, at*n))
+    val_idx = view(idx, (floor(Int, at*n)+1):n)
+    data[train_idx,:], data[val_idx,:]
+end
+
+# ╔═╡ 14b15a01-bfc6-4b52-b520-d45088909ad1
+train, validation = partitionTrainValidation(weather,0.7)
+
 # ╔═╡ f76f1eb9-3091-4682-a94f-ae34f27ce401
 md"""
 ## Sub data sets
 Create dataframes with only interesting data
 """
+
+# ╔═╡ e2894745-52f5-49de-9ae4-ccb211d87917
+
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -87,6 +152,7 @@ DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 OpenML = "8b6db2d4-7670-4922-a472-f9537c81ab66"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+Shuffle = "bf21e494-c40e-4daa-abfb-de5ec0aad010"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 
 [compat]
@@ -95,6 +161,7 @@ DataFrames = "~1.2.2"
 OpenML = "~0.2.0"
 Plots = "~1.24.3"
 PlutoUI = "~0.7.21"
+Shuffle = "~0.1.1"
 StatsPlots = "~0.14.29"
 """
 
@@ -930,6 +997,12 @@ git-tree-sha1 = "91eddf657aca81df9ae6ceb20b959ae5653ad1de"
 uuid = "992d4aef-0814-514b-bc4d-f2e9a6c4116f"
 version = "1.0.3"
 
+[[Shuffle]]
+deps = ["Random"]
+git-tree-sha1 = "b812fb30d6d8b295b71dd5a4102d1ae7b60698e3"
+uuid = "bf21e494-c40e-4daa-abfb-de5ec0aad010"
+version = "0.1.1"
+
 [[Sockets]]
 uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
 
@@ -1287,10 +1360,24 @@ version = "0.9.1+5"
 # ╟─7ba71414-0ab3-49b5-af3e-385bbedd2f66
 # ╟─4b4a217d-d89e-40e7-8969-de8ae96e30c1
 # ╠═4d94eda1-8e3e-4276-8a39-ce776f019ded
-# ╟─fe4508f0-77bd-44ea-a933-0754047f4568
+# ╠═914ee24a-5004-45be-8b0e-ed6083cd6e95
+# ╠═dfb0c653-8b61-4169-bed5-e676cca7de7f
+# ╠═79454648-6a86-4caf-96e0-69a2946399a6
+# ╠═f440a965-99a7-47bc-a5bc-247c83798fb3
+# ╠═48486212-6a70-4b42-b1d4-5b9bc22552bf
+# ╟─4a32352d-8911-449b-a56a-b8b09a86fe31
 # ╟─9965aa5a-4d80-4e15-acbd-ca910aa43c10
 # ╠═29a133e8-e64b-4da4-b09c-f64d02533ac1
 # ╟─2c167ddf-1192-445c-85db-f705cbf4e0e2
+# ╠═ecefb21c-b051-4fc7-9e49-54c58b05750d
+# ╠═bc64fe54-0199-4a19-bed5-e34da402dd74
+# ╠═493c2b64-47b8-4f8d-b83e-0cc16b2b1bed
+# ╠═1ee01037-5f62-41fd-8113-84388d862a6e
+# ╟─1fdc21c1-51da-437a-821e-f20146cd6306
+# ╟─47d0766d-dba5-46d5-b813-80773bd4dfa2
+# ╠═8a6e0e08-2e4c-4bb7-b1ce-b3e7c7cdad1c
+# ╠═14b15a01-bfc6-4b52-b520-d45088909ad1
 # ╟─f76f1eb9-3091-4682-a94f-ae34f27ce401
+# ╠═e2894745-52f5-49de-9ae4-ccb211d87917
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
