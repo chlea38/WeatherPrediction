@@ -4,155 +4,102 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 266e9ab0-528a-11ec-0c80-f9f66ea8d7ab
-using PlutoUI,DataFrames, CSV, Plots, OpenML, StatsPlots, Shuffle
+# ╔═╡ 5d49ec06-30a6-45c6-b778-d286b445bb3d
+using PlutoUI,DataFrames, CSV, Plots, MLJ, MLJLinearModels, OpenML, StatsPlots, Shuffle
 
-# ╔═╡ 61e6f172-dc93-4b11-a2d5-d37c04352ba2
+# ╔═╡ 2b97bbe7-24bf-4b8f-96f3-80414c32bd00
 PlutoUI.TableOfContents(title="Table of contents")
 
-# ╔═╡ e642c2da-c034-4115-859d-0d2e1190bcf0
+# ╔═╡ 1a3cf302-55e0-11ec-26a0-a3ccc7d44339
 md"""
-# Data exploration
-## Raw data
-In this part, we will explore the raw data. We first import the CSV file for **training data** and visualize it using _Dataframe_.  
+# Import training data
 """
 
-# ╔═╡ c16c9251-e5aa-43e2-a6c3-8c4277d92f6e
-data = CSV.read(joinpath(@__DIR__, "..",  "data", "trainingdata.csv"), DataFrame)
-
-# ╔═╡ 7130247e-2b88-4c4a-b349-98513f61cf16
-md"""
-## Cleaning
-In order to use the data, we need to remove points where some data are missing, using _dropmissing._
-"""
-
-# ╔═╡ 83ce6ef5-4094-4942-8213-07a21f1c8fdb
-weather = dropmissing(data)
-
-# ╔═╡ 5aab8c9b-ed87-4548-84d9-bd7c1e49c498
-md"""
-## Data visualization
-### For one station
-Here we plot each weather element of the data for one station to visulaly explore the data and **find correlation** between data.  
-"""
-
-# ╔═╡ a51a8d9d-9c0b-4e0c-9764-5b3ca61a0728
-@df weather corrplot([:ABO_radiation_1 :ABO_delta_pressure_1 :ABO_air_temp_1 :ABO_sunshine_1 :ABO_wind_1 :ABO_wind_direction_1], grid = false, fillcolor = cgrad(), size = (1300, 1300))
-
-# ╔═╡ fa2b6af1-01f0-4cee-a259-f8f443033351
-@df weather corrplot([:PUY_radiation_1 :PUY_delta_pressure_1 :PUY_air_temp_1 :PUY_sunshine_1 :PUY_wind_1 :PUY_wind_direction_1], grid = false, fillcolor = cgrad(), size = (1300, 1300))
-
-# ╔═╡ 5298c791-8aa1-4dc8-9a04-328ccf48d7bd
-@df weather corrplot([:CDF_radiation_2 :CDF_delta_pressure_2 :CDF_air_temp_2 :CDF_sunshine_2 :CDF_wind_2 :CDF_wind_direction_2], grid = false, fillcolor = cgrad(), size = (1300, 1300))
-
-# ╔═╡ 6e50b187-91ad-4b6e-bb78-24a268375343
-@df weather corrplot([:SAM_radiation_3 :SAM_delta_pressure_3 :SAM_air_temp_3 :SAM_sunshine_3 :SAM_wind_3 :SAM_wind_direction_3], grid = false, fillcolor = cgrad(), size = (1300, 1300))
-
-# ╔═╡ eb0ca895-0b63-4a21-9ae2-5d8a7c8fadf6
-@df weather corrplot([:ZER_radiation_4 :ZER_delta_pressure_4 :ZER_air_temp_4 :ZER_sunshine_4 :ZER_wind_4 :ZER_wind_direction_4], grid = false, fillcolor = cgrad(), size = (1300, 1300))
-
-# ╔═╡ 7ba71414-0ab3-49b5-af3e-385bbedd2f66
-md"""
-We can see correlations on some data type, that we can visualize with the **trend curves.** 
-
-For example, we can observe for ABO that the *sunshine* and the *radiation* are strongly correlated, which makes sense. On the contrary, *delta_pressure* and *radiation* are very weakly correlated.
-"""
-
-# ╔═╡ 1fdc21c1-51da-437a-821e-f20146cd6306
-md"""
-Observations: Wether or not there are correlations betwen the different meausred parameters in a station seems to vary a lot from station to station.\
--> SAM seems to have a strong correlation between its measurement of radiation with wind direction, wind, sunshine, and air temperature whereas its delta pressure is not correlated with any other measurement.\
--> ZER only has some correlation between radiation, delta pressure and air temperature\
--> PUY and CDF have some degree of correlation between radiation, sunshine and air temperature.
-"""
-
-# ╔═╡ 4b4a217d-d89e-40e7-8969-de8ae96e30c1
-md"""
-### For each quantity accross different stations
-Here we plot each weather quantity to find **correlation between stations.** 
-"""
-
-# ╔═╡ 4d94eda1-8e3e-4276-8a39-ce776f019ded
-@df weather corrplot([:ABO_sunshine_2 :ENG_sunshine_2 :LUZ_sunshine_2 :NEU_sunshine_2 :PUY_sunshine_2 :ZER_sunshine_2], grid = false, fillcolor = cgrad(), size = (1300, 1300))
-
-# ╔═╡ 914ee24a-5004-45be-8b0e-ed6083cd6e95
-@df weather corrplot([:OTL_air_temp_3 :SIO_air_temp_3 :GVE_air_temp_3 :BAS_air_temp_3 :PIO_air_temp_3 :PUY_air_temp_3], grid = false, fillcolor = cgrad(), size = (1300, 1300))
-
-# ╔═╡ dfb0c653-8b61-4169-bed5-e676cca7de7f
-@df weather corrplot([:ZER_radiation_1 :SAM_radiation_1 :ALT_radiation_1 :INT_radiation_1 :CHU_radiation_1 :PUY_radiation_1], grid = false, fillcolor = cgrad(), size = (1300, 1300))
-
-# ╔═╡ 79454648-6a86-4caf-96e0-69a2946399a6
-@df weather corrplot([:ALT_delta_pressure_4 :DAV_delta_pressure_4 :NEU_delta_pressure_4 :SAM_delta_pressure_4 :LUZ_delta_pressure_4 :PUY_delta_pressure_4], grid = false, fillcolor = cgrad(), size = (1300, 1300))
-
-# ╔═╡ f440a965-99a7-47bc-a5bc-247c83798fb3
-@df weather corrplot([:INT_wind_direction_2 :SHA_wind_direction_2 :ZER_wind_direction_2 :CDF_wind_direction_2 :BAS_wind_direction_2 :PUY_wind_direction_2], grid = false, fillcolor = cgrad(), size = (1300, 1300))
-
-# ╔═╡ 48486212-6a70-4b42-b1d4-5b9bc22552bf
-@df weather corrplot([:ABO_wind_1 :BER_wind_1 :LUG_wind_1 :OTL_wind_1 :SIO_wind_1 :PUY_wind_1], grid = false, fillcolor = cgrad(), size = (1300, 1300))
-
-# ╔═╡ 4a32352d-8911-449b-a56a-b8b09a86fe31
-md"""
-**Observations**: across the different stations picked randomly, the measured quantities that seem to have a certain correlation are:
-- radiation (t=1)
-- air temperature (t=3)
-- delta pressure (t=4)
-
-It would thus be useful to find which stations have the highest dregree of correlation for these quantities. 
-
-Sunshine and wind direction clearly aren't correlated, but it can be interesting to look further into the wind parameter which isn't very clear.
-"""
-
-# ╔═╡ 9965aa5a-4d80-4e15-acbd-ca910aa43c10
-md"""
-### For one station at different times
-"""
-
-# ╔═╡ 29a133e8-e64b-4da4-b09c-f64d02533ac1
-@df weather corrplot([:ABO_radiation_1 :ABO_radiation_2 :ABO_radiation_3 :ABO_radiation_4], grid = false, fillcolor = cgrad(), size = (1300, 1300))
-
-# ╔═╡ 2c167ddf-1192-445c-85db-f705cbf4e0e2
-md"""
-### For different quantity relative to precipitation in pully
-"""
-
-# ╔═╡ 22425dc0-233d-4069-a903-b629169b0ebf
-
-
-# ╔═╡ 47d0766d-dba5-46d5-b813-80773bd4dfa2
-md"""
-# Data processing
-## Separating the data
-Making a training and a validation set from the original data, with 70% being in the training set to find the parameters and 30% in the validation set to find the hyperparameters.\
--> We could change this proportionnality of the split.\
--> We could run this multiple times so the split is different...
-"""
-
-# ╔═╡ 8a6e0e08-2e4c-4bb7-b1ce-b3e7c7cdad1c
-function partitionTrainValidation(data, at = 0.7) #randomly split data into two sets with at% in train
-    n = nrow(data)
-    idx = shuffle(1:n)
-    train_idx = view(idx, 1:floor(Int, at*n))
-    val_idx = view(idx, (floor(Int, at*n)+1):n)
-    data[train_idx,:], data[val_idx,:]
+# ╔═╡ ea09ca55-2953-47eb-b875-2efcb1d05f58
+begin
+	data = CSV.read(joinpath(@__DIR__, "..",  "data", "trainingdata.csv"), DataFrame);
+	weather = dropmissing(data)
 end
 
-# ╔═╡ 14b15a01-bfc6-4b52-b520-d45088909ad1
-train, validation = partitionTrainValidation(weather,0.7)
-
-# ╔═╡ f76f1eb9-3091-4682-a94f-ae34f27ce401
+# ╔═╡ 15179e92-9d36-4107-8039-289a038133d1
 md"""
-## Sub data sets
-Create dataframes with only interesting data
+# Apply multiple logistic regression
+We use a machine based on logistic classifier with all predictors (every columns except the last one which is the response variable), and fit the machine.
 """
 
-# ╔═╡ e2894745-52f5-49de-9ae4-ccb211d87917
+# ╔═╡ 77e4eaa5-9ad1-4c9b-845c-d362b26ac0b4
+begin
+	input = select(weather, Not(:precipitation_nextday)); #input
+	precipitation = weather.precipitation_nextday; # output
+	logistic_mach = fit!(machine(LogisticClassifier(penalty = :none), input, precipitation))
+end
 
+# ╔═╡ 1d6b8a91-d041-41eb-9bb9-856f287059f5
+md"""
+We can display the parameters :
+"""
+
+# ╔═╡ 69876710-7b5e-4540-a85a-5abbf8f6b7bc
+fitted_params(logistic_mach)
+
+# ╔═╡ 42c2b75c-02fb-40f7-b0ff-74b19385cece
+md"""
+Below is the **confusion matrix** for this fit. As we can see the results are not excellent.
+"""
+
+# ╔═╡ b399a433-c6e3-45f8-ac4d-4029cd969def
+confusion_matrix(predict_mode(logistic_mach, input), precipitation)
+
+# ╔═╡ 5942d09e-01ee-49c8-96c1-d2aae9e41276
+md"""
+# Predict precipitation next day
+First import test data, then apply the trained machine to predict the precipitation
+"""
+
+# ╔═╡ 68658650-042f-4c73-9660-bd023060c16f
+begin
+	test_data = CSV.read(joinpath(@__DIR__, "..",  "data", "testdata.csv"), DataFrame)
+	cleaned_test_data = dropmissing(test_data)
+end
+
+# ╔═╡ 55b7cfd3-312d-475f-8c54-28b58cc7c42b
+# try to first import prediction into a dataframe before saving it to CSV file
+begin
+	predic = predict(logistic_mach, cleaned_test_data)
+	df = DataFrame(id = 1:size(cleaned_test_data[!,1]), prediction = predic)
+end
+
+# ╔═╡ 98e71895-83ba-4115-8d4e-5190ffb0d9b6
+begin
+	prediction = predict(logistic_mach, cleaned_test_data)
+	CSV.write(joinpath(@__DIR__, "..", "results", "logistic_regression.csv"), prediction)
+end
+
+# ╔═╡ 2c2b5061-fc7e-42bf-b75a-8deba53e24cb
+md"""
+# /!\TEMPORAIRE: ERREURS A COMPRENDRE
+"""
+
+# ╔═╡ bfbf0a17-ad10-408f-8caa-4d77f2f7eb7a
+md"""
+Le type de la prediction ne correspond pas au type de base, du coup quand on veut sauvegarder les résultats ça fait nimp: quand t'ouvres le fichier csv des résultats ça a pas du tout la bonne forme, du coup j'ai essayé de faire un dataframe d'abord pour etre sure (et pout nommer les colonnes avec id et prediction), mais ca marche pas :'(
+"""
+
+# ╔═╡ b57ec19d-2f56-446b-8629-d3025d8a0e1e
+# type de base
+typeof(weather.precipitation_nextday)
+
+# ╔═╡ cb1c76a2-0894-491b-b4c7-e9902c66e784
+# type de sortie
+typeof(predict(logistic_mach, input))
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+MLJ = "add582a8-e3ab-11e8-2d5e-e98b27df1bc7"
+MLJLinearModels = "6ee0df7b-362f-4a72-a706-9e79364fb692"
 OpenML = "8b6db2d4-7670-4922-a472-f9537c81ab66"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
@@ -161,9 +108,11 @@ StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 
 [compat]
 CSV = "~0.9.11"
-DataFrames = "~1.2.2"
+DataFrames = "~1.3.0"
+MLJ = "~0.16.7"
+MLJLinearModels = "~0.5.6"
 OpenML = "~0.2.0"
-Plots = "~1.24.3"
+Plots = "~1.25.0"
 PlutoUI = "~0.7.21"
 Shuffle = "~0.1.1"
 StatsPlots = "~0.14.29"
@@ -212,6 +161,12 @@ git-tree-sha1 = "e214a9b9bd1b4e1b4f15b22c0994862b66af7ff7"
 uuid = "68821587-b530-5797-8361-c406ea357684"
 version = "3.5.0+3"
 
+[[ArrayInterface]]
+deps = ["Compat", "IfElse", "LinearAlgebra", "Requires", "SparseArrays", "Static"]
+git-tree-sha1 = "265b06e2b1f6a216e0e8f183d28e4d354eab3220"
+uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
+version = "3.2.1"
+
 [[Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 
@@ -220,6 +175,11 @@ deps = ["LinearAlgebra", "Random", "SparseArrays", "WoodburyMatrices"]
 git-tree-sha1 = "66771c8d21c8ff5e3a93379480a2307ac36863f7"
 uuid = "13072b0f-2c55-5437-9ae7-d433b7a33950"
 version = "1.0.1"
+
+[[BSON]]
+git-tree-sha1 = "ebcd6e22d69f21249b7b8668351ebf42d6dc87a1"
+uuid = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
+version = "0.3.4"
 
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
@@ -290,6 +250,12 @@ git-tree-sha1 = "417b0ed7b8b838aa6ca0a87aadf1bb9eb111ce40"
 uuid = "5ae59095-9a9b-59fe-a467-6f913c188581"
 version = "0.12.8"
 
+[[CommonSubexpressions]]
+deps = ["MacroTools", "Test"]
+git-tree-sha1 = "7b8a93dba8af7e3b42fecabf646260105ac373f7"
+uuid = "bbf7d656-a473-5ed7-a52c-81e309532950"
+version = "0.3.0"
+
 [[Compat]]
 deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "SHA", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
 git-tree-sha1 = "dce3e3fea680869eaa0b774b2e8343e9ff442313"
@@ -299,6 +265,11 @@ version = "3.40.0"
 [[CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
+
+[[ComputationalResources]]
+git-tree-sha1 = "52cb3ec90e8a8bea0e62e275ba577ad0f74821f7"
+uuid = "ed09eef8-17a6-5b46-8889-db040fac31e3"
+version = "0.3.2"
 
 [[Contour]]
 deps = ["StaticArrays"]
@@ -318,9 +289,9 @@ version = "1.9.0"
 
 [[DataFrames]]
 deps = ["Compat", "DataAPI", "Future", "InvertedIndices", "IteratorInterfaceExtensions", "LinearAlgebra", "Markdown", "Missings", "PooledArrays", "PrettyTables", "Printf", "REPL", "Reexport", "SortingAlgorithms", "Statistics", "TableTraits", "Tables", "Unicode"]
-git-tree-sha1 = "d785f42445b63fc86caa08bb9a9351008be9b765"
+git-tree-sha1 = "2e993336a3f68216be91eb8ee4625ebbaba19147"
 uuid = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-version = "1.2.2"
+version = "1.3.0"
 
 [[DataStructures]]
 deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
@@ -353,11 +324,23 @@ git-tree-sha1 = "80c3e8639e3353e5d2912fb3a1916b8455e2494b"
 uuid = "b429d917-457f-4dbc-8f4c-0cc954292b1d"
 version = "0.4.0"
 
+[[DiffResults]]
+deps = ["StaticArrays"]
+git-tree-sha1 = "c18e98cba888c6c25d1c3b048e4b3380ca956805"
+uuid = "163ba53b-c6d8-5494-b064-1a9d43ac40c5"
+version = "1.0.3"
+
+[[DiffRules]]
+deps = ["LogExpFunctions", "NaNMath", "Random", "SpecialFunctions"]
+git-tree-sha1 = "d8f468c5cd4d94e86816603f7d18ece910b4aaf1"
+uuid = "b552c78f-8df3-52c6-915a-8e097449b14b"
+version = "1.5.0"
+
 [[Distances]]
-deps = ["LinearAlgebra", "Statistics", "StatsAPI"]
-git-tree-sha1 = "837c83e5574582e07662bbbba733964ff7c26b9d"
+deps = ["LinearAlgebra", "SparseArrays", "Statistics", "StatsAPI"]
+git-tree-sha1 = "3258d0659f812acde79e8a74b11f17ac06d0ca04"
 uuid = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
-version = "0.10.6"
+version = "0.10.7"
 
 [[Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
@@ -384,6 +367,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "3f3a2501fa7236e9b911e0f7a588c657e822bb6d"
 uuid = "5ae413db-bbd1-5e63-b57d-d24a61df00f5"
 version = "2.2.3+0"
+
+[[EarlyStopping]]
+deps = ["Dates", "Statistics"]
+git-tree-sha1 = "ea0b56527cefce87419d4b7559811bd96974a6c8"
+uuid = "792122b4-ca99-40de-a6bc-6742525f08b6"
+version = "0.1.9"
 
 [[Expat_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -427,6 +416,12 @@ git-tree-sha1 = "8756f9935b7ccc9064c6eef0bff0ad643df733a3"
 uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
 version = "0.12.7"
 
+[[FiniteDiff]]
+deps = ["ArrayInterface", "LinearAlgebra", "Requires", "SparseArrays", "StaticArrays"]
+git-tree-sha1 = "8b3c09b56acaf3c0e581c66638b85c8650ee9dca"
+uuid = "6a86dc24-6348-571c-b903-95158fe2bd41"
+version = "2.8.1"
+
 [[FixedPointNumbers]]
 deps = ["Statistics"]
 git-tree-sha1 = "335bfdceacc84c5cdf16aadc768aa5ddfc5383cc"
@@ -444,6 +439,12 @@ deps = ["Printf"]
 git-tree-sha1 = "8339d61043228fdd3eb658d86c926cb282ae72a8"
 uuid = "59287772-0a20-5a39-b81b-1366585eb4c0"
 version = "0.4.2"
+
+[[ForwardDiff]]
+deps = ["CommonSubexpressions", "DiffResults", "DiffRules", "LinearAlgebra", "LogExpFunctions", "NaNMath", "Preferences", "Printf", "Random", "SpecialFunctions", "StaticArrays"]
+git-tree-sha1 = "6406b5112809c08b1baa5703ad274e1dded0652f"
+uuid = "f6369f11-7733-5829-9624-2563aa707210"
+version = "0.10.23"
 
 [[FreeType2_jll]]
 deps = ["Artifacts", "Bzip2_jll", "JLLWrappers", "Libdl", "Pkg", "Zlib_jll"]
@@ -537,6 +538,11 @@ git-tree-sha1 = "f7be53659ab06ddc986428d3a9dcc95f6fa6705a"
 uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
 version = "0.2.2"
 
+[[IfElse]]
+git-tree-sha1 = "debdd00ffef04665ccbb3e150747a77560e8fad1"
+uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
+version = "0.1.1"
+
 [[IniFile]]
 deps = ["Test"]
 git-tree-sha1 = "098e4d2c533924c921f9f9847274f2ad89e018b8"
@@ -545,9 +551,9 @@ version = "0.5.0"
 
 [[InlineStrings]]
 deps = ["Parsers"]
-git-tree-sha1 = "19cb49649f8c41de7fea32d089d37de917b553da"
+git-tree-sha1 = "ca99cac337f8e0561c6a6edeeae5bf6966a78d21"
 uuid = "842dd82b-1e85-43dc-bf29-5d0ee9dffc48"
-version = "1.0.1"
+version = "1.1.0"
 
 [[IntelOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -586,6 +592,18 @@ git-tree-sha1 = "05110a2ab1fc5f932622ffea2a003221f4782c18"
 uuid = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
 version = "1.3.0"
 
+[[IterationControl]]
+deps = ["EarlyStopping", "InteractiveUtils"]
+git-tree-sha1 = "f61d5d4d0e433b3fab03ca5a1bfa2d7dcbb8094c"
+uuid = "b3c1a2ee-3fec-4384-bf48-272ea71de57c"
+version = "0.4.0"
+
+[[IterativeSolvers]]
+deps = ["LinearAlgebra", "Printf", "Random", "RecipesBase", "SparseArrays"]
+git-tree-sha1 = "1169632f425f79429f245113b775a0e3d121457c"
+uuid = "42fd0dbc-a981-5370-80f2-aaf504508153"
+version = "0.9.2"
+
 [[IteratorInterfaceExtensions]]
 git-tree-sha1 = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
 uuid = "82899510-4779-5014-852e-03e436cf321d"
@@ -596,6 +614,12 @@ deps = ["Preferences"]
 git-tree-sha1 = "642a199af8b68253517b80bd3bfd17eb4e84df6e"
 uuid = "692b3bcd-3c85-4b1f-b108-f13ce0eb3210"
 version = "1.3.0"
+
+[[JLSO]]
+deps = ["BSON", "CodecZlib", "FilePathsBase", "Memento", "Pkg", "Serialization"]
+git-tree-sha1 = "e00feb9d56e9e8518e0d60eef4d1040b282771e2"
+uuid = "9da8a3cd-07a3-59c0-a743-3fdc52c30d11"
+version = "2.6.0"
 
 [[JSON]]
 deps = ["Dates", "Mmap", "Parsers", "Unicode"]
@@ -638,9 +662,20 @@ git-tree-sha1 = "a8f4f279b6fa3c3c4f1adadd78a621b13a506bce"
 uuid = "23fbe1c1-3f47-55db-b15f-69d7ec21a316"
 version = "0.15.9"
 
+[[LatinHypercubeSampling]]
+deps = ["Random", "StableRNGs", "StatsBase", "Test"]
+git-tree-sha1 = "42938ab65e9ed3c3029a8d2c58382ca75bdab243"
+uuid = "a5e1c1ea-c99a-51d3-a14d-a9a37257b02d"
+version = "1.8.0"
+
 [[LazyArtifacts]]
 deps = ["Artifacts", "Pkg"]
 uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
+
+[[LearnBase]]
+git-tree-sha1 = "a0d90569edd490b82fdc4dc078ea54a5a800d30a"
+uuid = "7f8f8fb0-2700-5f03-b4bd-41f8cfc144b6"
+version = "0.4.1"
 
 [[LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
@@ -709,9 +744,21 @@ git-tree-sha1 = "7f3efec06033682db852f8b3bc3c1d2b0a0ab066"
 uuid = "38a345b3-de98-5d2b-a5d3-14cd9215e700"
 version = "2.36.0+0"
 
+[[LineSearches]]
+deps = ["LinearAlgebra", "NLSolversBase", "NaNMath", "Parameters", "Printf"]
+git-tree-sha1 = "f27132e551e959b3667d8c93eae90973225032dd"
+uuid = "d3d80556-e9d4-5f37-9878-2ab0fcc64255"
+version = "7.1.1"
+
 [[LinearAlgebra]]
 deps = ["Libdl"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+
+[[LinearMaps]]
+deps = ["LinearAlgebra", "SparseArrays"]
+git-tree-sha1 = "dbb14c604fc47aa4f2e19d0ebb7b6416f3cfa5f5"
+uuid = "7a12625a-238d-50fd-b39a-03d52299707e"
+version = "3.5.1"
 
 [[LogExpFunctions]]
 deps = ["ChainRulesCore", "ChangesOfVariables", "DocStringExtensions", "InverseFunctions", "IrrationalConstants", "LinearAlgebra"]
@@ -722,11 +769,77 @@ version = "0.3.5"
 [[Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
+[[LossFunctions]]
+deps = ["InteractiveUtils", "LearnBase", "Markdown", "RecipesBase", "StatsBase"]
+git-tree-sha1 = "0f057f6ea90a84e73a8ef6eebb4dc7b5c330020f"
+uuid = "30fc2ffe-d236-52d8-8643-a9d8f7c094a7"
+version = "0.7.2"
+
 [[MKL_jll]]
 deps = ["Artifacts", "IntelOpenMP_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "Pkg"]
 git-tree-sha1 = "5455aef09b40e5020e1520f551fa3135040d4ed0"
 uuid = "856f044c-d86e-5d09-b602-aeab76dc8ba7"
 version = "2021.1.1+2"
+
+[[MLJ]]
+deps = ["CategoricalArrays", "ComputationalResources", "Distributed", "Distributions", "LinearAlgebra", "MLJBase", "MLJEnsembles", "MLJIteration", "MLJModels", "MLJOpenML", "MLJSerialization", "MLJTuning", "Pkg", "ProgressMeter", "Random", "ScientificTypes", "Statistics", "StatsBase", "Tables"]
+git-tree-sha1 = "7cbd651e39fd3f3aa37e8a4d8beaccfa8d13b1cd"
+uuid = "add582a8-e3ab-11e8-2d5e-e98b27df1bc7"
+version = "0.16.7"
+
+[[MLJBase]]
+deps = ["CategoricalArrays", "ComputationalResources", "Dates", "DelimitedFiles", "Distributed", "Distributions", "InteractiveUtils", "InvertedIndices", "LinearAlgebra", "LossFunctions", "MLJModelInterface", "Missings", "OrderedCollections", "Parameters", "PrettyTables", "ProgressMeter", "Random", "ScientificTypes", "StatisticalTraits", "Statistics", "StatsBase", "Tables"]
+git-tree-sha1 = "4a0b5d1212786f5de364f481ef2a84458d3dfe4b"
+uuid = "a7f614a8-145f-11e9-1d2a-a57a1082229d"
+version = "0.18.26"
+
+[[MLJEnsembles]]
+deps = ["CategoricalArrays", "ComputationalResources", "Distributed", "Distributions", "MLJBase", "MLJModelInterface", "ProgressMeter", "Random", "ScientificTypes", "StatsBase"]
+git-tree-sha1 = "f8ca949d52432b81f621d9da641cf59829ad2c8c"
+uuid = "50ed68f4-41fd-4504-931a-ed422449fee0"
+version = "0.1.2"
+
+[[MLJIteration]]
+deps = ["IterationControl", "MLJBase", "Random"]
+git-tree-sha1 = "1c94830f8927b10a5653d6e1868c20faccf57be5"
+uuid = "614be32b-d00c-4edb-bd02-1eb411ab5e55"
+version = "0.3.3"
+
+[[MLJLinearModels]]
+deps = ["DocStringExtensions", "IterativeSolvers", "LinearAlgebra", "LinearMaps", "MLJModelInterface", "Optim", "Parameters"]
+git-tree-sha1 = "9eb4f07f23d44a898213eb4927869598442d90bb"
+uuid = "6ee0df7b-362f-4a72-a706-9e79364fb692"
+version = "0.5.6"
+
+[[MLJModelInterface]]
+deps = ["Random", "ScientificTypesBase", "StatisticalTraits"]
+git-tree-sha1 = "0174e9d180b0cae1f8fe7976350ad52f0e70e0d8"
+uuid = "e80e1ace-859a-464e-9ed9-23947d8ae3ea"
+version = "1.3.3"
+
+[[MLJModels]]
+deps = ["CategoricalArrays", "Dates", "Distances", "Distributions", "InteractiveUtils", "LinearAlgebra", "MLJBase", "MLJModelInterface", "OrderedCollections", "Parameters", "Pkg", "REPL", "Random", "Requires", "ScientificTypes", "Statistics", "StatsBase", "Tables"]
+git-tree-sha1 = "271c431ef783079db3371ffe770140bb83cf2f16"
+uuid = "d491faf4-2d78-11e9-2867-c94bc002c0b7"
+version = "0.14.14"
+
+[[MLJOpenML]]
+deps = ["HTTP", "JSON"]
+git-tree-sha1 = "2903e9ef92ac5f390ca2a420fb0dbe3361ab57d7"
+uuid = "cbea4545-8c96-4583-ad3a-44078d60d369"
+version = "1.0.0"
+
+[[MLJSerialization]]
+deps = ["IterationControl", "JLSO", "MLJBase", "MLJModelInterface"]
+git-tree-sha1 = "cd6285f95948fe1047b7d6fd346c172e247c1188"
+uuid = "17bed46d-0ab5-4cd4-b792-a5c4b8547c6d"
+version = "1.1.2"
+
+[[MLJTuning]]
+deps = ["ComputationalResources", "Distributed", "Distributions", "LatinHypercubeSampling", "MLJBase", "ProgressMeter", "Random", "RecipesBase"]
+git-tree-sha1 = "8f3911fa3aef4299059f573cf75669d61f8bcef5"
+uuid = "03970b2e-30c4-11ea-3135-d1576263f10f"
+version = "0.6.14"
 
 [[MacroTools]]
 deps = ["Markdown", "Random"]
@@ -753,6 +866,12 @@ git-tree-sha1 = "e498ddeee6f9fdb4551ce855a46f54dbd900245f"
 uuid = "442fdcdd-2543-5da2-b0f3-8c86c306513e"
 version = "0.3.1"
 
+[[Memento]]
+deps = ["Dates", "Distributed", "Requires", "Serialization", "Sockets", "Test", "UUIDs"]
+git-tree-sha1 = "9b0b0dbf419fbda7b383dc12d108621d26eeb89f"
+uuid = "f28f55f0-a522-5efc-85c2-fe41dfb9b2d9"
+version = "1.3.0"
+
 [[Missings]]
 deps = ["DataAPI"]
 git-tree-sha1 = "bf210ce90b6c9eed32d25dbcae1ebc565df2687f"
@@ -770,6 +889,12 @@ deps = ["Arpack", "LinearAlgebra", "SparseArrays", "Statistics", "StatsBase"]
 git-tree-sha1 = "8d958ff1854b166003238fe191ec34b9d592860a"
 uuid = "6f286f6a-111f-5878-ab1e-185364afe411"
 version = "0.8.0"
+
+[[NLSolversBase]]
+deps = ["DiffResults", "Distributed", "FiniteDiff", "ForwardDiff"]
+git-tree-sha1 = "50310f934e55e5ca3912fb941dec199b49ca9b68"
+uuid = "d41bc354-129a-5804-8e4c-c37616107c6c"
+version = "7.8.2"
 
 [[NaNMath]]
 git-tree-sha1 = "bfe47e760d60b82b66b61d2d44128b62e3a369fb"
@@ -828,6 +953,12 @@ git-tree-sha1 = "13652491f6856acfd2db29360e1bbcd4565d04f1"
 uuid = "efe28fd5-8261-553b-a9e1-b2916fc3738e"
 version = "0.5.5+0"
 
+[[Optim]]
+deps = ["Compat", "FillArrays", "ForwardDiff", "LineSearches", "LinearAlgebra", "NLSolversBase", "NaNMath", "Parameters", "PositiveFactorizations", "Printf", "SparseArrays", "StatsBase"]
+git-tree-sha1 = "35d435b512fbab1d1a29138b5229279925eba369"
+uuid = "429524aa-4258-5aef-a3af-852621145aeb"
+version = "1.5.0"
+
 [[Opus_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "51a08fb14ec28da2ec7a927c4337e4332c2a4720"
@@ -850,6 +981,12 @@ deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse"]
 git-tree-sha1 = "ee26b350276c51697c9c2d88a072b339f9f03d73"
 uuid = "90014a1f-27ba-587c-ab20-58faa44d9150"
 version = "0.11.5"
+
+[[Parameters]]
+deps = ["OrderedCollections", "UnPack"]
+git-tree-sha1 = "34c0e9ad262e5f7fc75b10a9952ca7692cfc5fbe"
+uuid = "d96e819e-fc66-5662-9728-84c9c7592b0a"
+version = "0.12.3"
 
 [[Parsers]]
 deps = ["Dates"]
@@ -881,9 +1018,9 @@ version = "1.0.15"
 
 [[Plots]]
 deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers", "GR", "GeometryBasics", "JSON", "Latexify", "LinearAlgebra", "Measures", "NaNMath", "PlotThemes", "PlotUtils", "Printf", "REPL", "Random", "RecipesBase", "RecipesPipeline", "Reexport", "Requires", "Scratch", "Showoff", "SparseArrays", "Statistics", "StatsBase", "UUIDs", "UnicodeFun"]
-git-tree-sha1 = "d73736030a094e8d24fdf3629ae980217bf1d59d"
+git-tree-sha1 = "8789439a899b77f4fbb4d7298500a6a5781205bc"
 uuid = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-version = "1.24.3"
+version = "1.25.0"
 
 [[PlutoUI]]
 deps = ["AbstractPlutoDingetjes", "Base64", "Dates", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "Markdown", "Random", "Reexport", "UUIDs"]
@@ -896,6 +1033,12 @@ deps = ["DataAPI", "Future"]
 git-tree-sha1 = "db3a23166af8aebf4db5ef87ac5b00d36eb771e2"
 uuid = "2dfb63ee-cc39-5dd5-95bd-886bf059d720"
 version = "1.4.0"
+
+[[PositiveFactorizations]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "17275485f373e6673f7e7f97051f703ed5b15b20"
+uuid = "85a6dd25-e78a-55b7-8502-1745935b8125"
+version = "0.2.4"
 
 [[Preferences]]
 deps = ["TOML"]
@@ -912,6 +1055,12 @@ version = "1.2.3"
 [[Printf]]
 deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+
+[[ProgressMeter]]
+deps = ["Distributed", "Printf"]
+git-tree-sha1 = "afadeba63d90ff223a6a48d2009434ecee2ec9e8"
+uuid = "92933f4c-e287-5a05-a399-4b506db050ca"
+version = "1.7.1"
 
 [[Qt5Base_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "xkbcommon_jll"]
@@ -976,6 +1125,17 @@ version = "0.3.0+0"
 [[SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 
+[[ScientificTypes]]
+deps = ["CategoricalArrays", "ColorTypes", "Dates", "Distributions", "PrettyTables", "Reexport", "ScientificTypesBase", "StatisticalTraits", "Tables"]
+git-tree-sha1 = "7a3efcacd212801a8cf2f961e8238ffb2109b30d"
+uuid = "321657f4-b219-11e9-178b-2701a2544e81"
+version = "2.3.3"
+
+[[ScientificTypesBase]]
+git-tree-sha1 = "185e373beaf6b381c1e7151ce2c2a722351d6637"
+uuid = "30f210dd-8aff-4c5f-94ba-8e64358c1161"
+version = "2.3.0"
+
 [[Scratch]]
 deps = ["Dates"]
 git-tree-sha1 = "0b4b7f1393cff97c33891da2a0bf69c6ed241fda"
@@ -1026,11 +1186,29 @@ git-tree-sha1 = "f0bccf98e16759818ffc5d97ac3ebf87eb950150"
 uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
 version = "1.8.1"
 
+[[StableRNGs]]
+deps = ["Random", "Test"]
+git-tree-sha1 = "3be7d49667040add7ee151fefaf1f8c04c8c8276"
+uuid = "860ef19b-820b-49d6-a774-d7a799459cd3"
+version = "1.0.0"
+
+[[Static]]
+deps = ["IfElse"]
+git-tree-sha1 = "e7bc80dc93f50857a5d1e3c8121495852f407e6a"
+uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
+version = "0.4.0"
+
 [[StaticArrays]]
 deps = ["LinearAlgebra", "Random", "Statistics"]
 git-tree-sha1 = "3c76dde64d03699e074ac02eb2e8ba8254d428da"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
 version = "1.2.13"
+
+[[StatisticalTraits]]
+deps = ["ScientificTypesBase"]
+git-tree-sha1 = "730732cae4d3135e2f2182bd47f8d8b795ea4439"
+uuid = "64bff920-2084-43da-a3e6-9bb72801c0c9"
+version = "2.1.0"
 
 [[Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
@@ -1113,6 +1291,11 @@ version = "1.3.0"
 [[UUIDs]]
 deps = ["Random", "SHA"]
 uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
+
+[[UnPack]]
+git-tree-sha1 = "387c1f73762231e86e0c9c5443ce3b4a0a9a0c2b"
+uuid = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
+version = "1.0.2"
 
 [[Unicode]]
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
@@ -1353,36 +1536,23 @@ version = "0.9.1+5"
 """
 
 # ╔═╡ Cell order:
-# ╠═266e9ab0-528a-11ec-0c80-f9f66ea8d7ab
-# ╠═61e6f172-dc93-4b11-a2d5-d37c04352ba2
-# ╟─e642c2da-c034-4115-859d-0d2e1190bcf0
-# ╠═c16c9251-e5aa-43e2-a6c3-8c4277d92f6e
-# ╟─7130247e-2b88-4c4a-b349-98513f61cf16
-# ╠═83ce6ef5-4094-4942-8213-07a21f1c8fdb
-# ╟─5aab8c9b-ed87-4548-84d9-bd7c1e49c498
-# ╠═a51a8d9d-9c0b-4e0c-9764-5b3ca61a0728
-# ╠═fa2b6af1-01f0-4cee-a259-f8f443033351
-# ╠═5298c791-8aa1-4dc8-9a04-328ccf48d7bd
-# ╠═6e50b187-91ad-4b6e-bb78-24a268375343
-# ╠═eb0ca895-0b63-4a21-9ae2-5d8a7c8fadf6
-# ╟─7ba71414-0ab3-49b5-af3e-385bbedd2f66
-# ╟─1fdc21c1-51da-437a-821e-f20146cd6306
-# ╟─4b4a217d-d89e-40e7-8969-de8ae96e30c1
-# ╠═4d94eda1-8e3e-4276-8a39-ce776f019ded
-# ╠═914ee24a-5004-45be-8b0e-ed6083cd6e95
-# ╠═dfb0c653-8b61-4169-bed5-e676cca7de7f
-# ╠═79454648-6a86-4caf-96e0-69a2946399a6
-# ╠═f440a965-99a7-47bc-a5bc-247c83798fb3
-# ╠═48486212-6a70-4b42-b1d4-5b9bc22552bf
-# ╟─4a32352d-8911-449b-a56a-b8b09a86fe31
-# ╟─9965aa5a-4d80-4e15-acbd-ca910aa43c10
-# ╠═29a133e8-e64b-4da4-b09c-f64d02533ac1
-# ╟─2c167ddf-1192-445c-85db-f705cbf4e0e2
-# ╠═22425dc0-233d-4069-a903-b629169b0ebf
-# ╟─47d0766d-dba5-46d5-b813-80773bd4dfa2
-# ╠═8a6e0e08-2e4c-4bb7-b1ce-b3e7c7cdad1c
-# ╠═14b15a01-bfc6-4b52-b520-d45088909ad1
-# ╟─f76f1eb9-3091-4682-a94f-ae34f27ce401
-# ╠═e2894745-52f5-49de-9ae4-ccb211d87917
+# ╠═5d49ec06-30a6-45c6-b778-d286b445bb3d
+# ╠═2b97bbe7-24bf-4b8f-96f3-80414c32bd00
+# ╟─1a3cf302-55e0-11ec-26a0-a3ccc7d44339
+# ╠═ea09ca55-2953-47eb-b875-2efcb1d05f58
+# ╟─15179e92-9d36-4107-8039-289a038133d1
+# ╠═77e4eaa5-9ad1-4c9b-845c-d362b26ac0b4
+# ╟─1d6b8a91-d041-41eb-9bb9-856f287059f5
+# ╠═69876710-7b5e-4540-a85a-5abbf8f6b7bc
+# ╟─42c2b75c-02fb-40f7-b0ff-74b19385cece
+# ╠═b399a433-c6e3-45f8-ac4d-4029cd969def
+# ╟─5942d09e-01ee-49c8-96c1-d2aae9e41276
+# ╠═68658650-042f-4c73-9660-bd023060c16f
+# ╠═55b7cfd3-312d-475f-8c54-28b58cc7c42b
+# ╠═98e71895-83ba-4115-8d4e-5190ffb0d9b6
+# ╟─2c2b5061-fc7e-42bf-b75a-8deba53e24cb
+# ╟─bfbf0a17-ad10-408f-8caa-4d77f2f7eb7a
+# ╠═b57ec19d-2f56-446b-8629-d3025d8a0e1e
+# ╠═cb1c76a2-0894-491b-b4c7-e9902c66e784
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
