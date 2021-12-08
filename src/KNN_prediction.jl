@@ -1,25 +1,27 @@
 ### A Pluto.jl notebook ###
 # v0.17.2
+using Pkg
+Pkg.activate(joinpath(Pkg.devdir(), "MLCourse"))
 
 using Markdown
 using InteractiveUtils
 
 # ╔═╡ e0c8111c-5757-11ec-3009-65fc87e4a104
-using PlutoUI,DataFrames, CSV, Plots, MLJ, MLJLinearModels, OpenML, StatsPlots
+using PlutoUI,DataFrames, CSV, Plots, MLJ, MLJLinearModels, OpenML, StatsPlots, NearestNeighborModels
 
 # ╔═╡ ccaf10d9-2271-4a90-b443-3f22a6de715a
 PlutoUI.TableOfContents(title="Table of contents")
 
 # ╔═╡ 22771388-83e2-4a3a-8c4a-fed19f781e9f
 md"""
-# Input data
+# Input & test data
 """
 
 # ╔═╡ 6ab336b3-b4f0-4808-baab-b2afc9b318dd
 weather = dropmissing(CSV.read(joinpath(@__DIR__, "..",  "data", "trainingdata.csv"), DataFrame))
 
 # ╔═╡ 0dcd20bf-e599-4a6c-90d3-8f68735716b2
-function partitionTrainValidation(data, at = 0.7) 
+function partitionTrainValidation(data, at = 0.5) 
     n = nrow(data)
     idx = shuffle(1:n)
     train_idx = view(idx, 1:floor(Int, at*n))
@@ -27,8 +29,77 @@ function partitionTrainValidation(data, at = 0.7)
     data[train_idx,:], data[val_idx,:]
 end
 
-# ╔═╡ cd0bc9bf-b828-4998-83c4-aa3720f8feff
+# ╔═╡ d60dfe6c-75fa-4dc8-81e5-6bb56417c398
+begin
+	train,validation = partitionTrainValidation(weather,0.7)
+	train_input = select(train, Not(:precipitation_nextday)) #ajouter le coerce! ou non?
+	val_input = select(validation, Not(:precipitation_nextday))
+end
 
+train_input
+val_input
+
+# ╔═╡ 384bd618-391f-495d-aa21-e3bbe9e7548c
+begin
+	test_data = CSV.read(joinpath(@__DIR__, "..",  "data", "testdata.csv"), DataFrame)
+	cleaned_test_data = dropmissing(test_data)
+end
+
+# ╔═╡ a52c6e4a-cca5-4864-a79e-b0d32b2a4b56
+md"""
+# KNN Machine
+"""
+
+# ╔═╡ e5bdef8c-0bfc-452b-bc9f-7ba5fffbe62d
+begin
+	val_output = coerce!(validation, :precipitation_nextday=>Multiclass)
+	train_output = coerce!(train, :precipitation_nextday=>Multiclass)
+	#KNN_mach = fit!(machine(KNNClassifier(K=400), validation_input, validation.precipitation_nextday))
+	KNN_mach = fit!(machine(KNNClassifier(K=400), val_input, val_output)) #fitting with validation
+end
+
+# ╔═╡ a9501c8c-82bf-42d1-be53-da47c81b55ec
+begin
+	pred = predict(KNN_mach,train_input).prob_given_ref.vals #predicting on training
+	#rmse(pred[2],train_output[!,2])
+end
+
+# ╔═╡ d56146bb-bed2-4f0c-9c68-a3cc3c6f7c73
+md"""
+# Output file
+"""
+
+# ╔═╡ 6f7a793c-ccf8-4f9b-99de-3c19674fabfd
+#begin
+	#probs = predict(KNN_mach, cleaned_test_data).prob_given_ref.vals
+	#P = size(cleaned_test_data)[1]
+	#df = DataFrame(id = 1:P, precipitation_nextday = pred[2])
+	#CSV.write(joinpath(@__DIR__, "..", "results", "KNN_manual_tuning.csv"), df)
+#end
+
+# ╔═╡ 70358cf8-e2a8-4c50-a186-914cec00146c
+md"""
+# Self-tuning mach
+"""
+
+# ╔═╡ cd0bc9bf-b828-4998-83c4-aa3720f8feff
+begin 
+	model_KNN = KNNClassifier()
+	
+	selftuning_KNN = TunedModel(model = model_KNN,
+                                   resampling = CV(nfolds = 10),
+                                   tuning = Grid(),
+                                   range = range(model_KNN, :K, values = 1:50),
+                                   measure = rmse())
+	selftuning_KNN_mach = machine(selftuning_KNN, select(validation,Not(:precipitation_nextday)), validation.precipitation_nextday) |> fit!
+end
+
+# ╔═╡ 2b2244e7-3cc3-48f5-bc31-67776fffbf9f
+rep = report(self_tuning_class_mach)
+
+# ╔═╡ 5c1dd926-76b6-42a1-9603-f990644224a7
+scatter(reshape(rep.plotting.parameter_values, :),
+	    rep.plotting.measurements, xlabel = "K", ylabel = "AUC")
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -37,6 +108,7 @@ CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 MLJ = "add582a8-e3ab-11e8-2d5e-e98b27df1bc7"
 MLJLinearModels = "6ee0df7b-362f-4a72-a706-9e79364fb692"
+NearestNeighborModels = "636a865e-7cf4-491e-846c-de09b730eb36"
 OpenML = "8b6db2d4-7670-4922-a472-f9537c81ab66"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
@@ -47,6 +119,7 @@ CSV = "~0.9.11"
 DataFrames = "~1.3.0"
 MLJ = "~0.16.7"
 MLJLinearModels = "~0.5.6"
+NearestNeighborModels = "~0.1.6"
 OpenML = "~0.2.0"
 Plots = "~1.25.0"
 PlutoUI = "~0.7.21"
@@ -836,6 +909,12 @@ git-tree-sha1 = "bfe47e760d60b82b66b61d2d44128b62e3a369fb"
 uuid = "77ba4419-2d1f-58cd-9bb1-8ffee604a2e3"
 version = "0.3.5"
 
+[[NearestNeighborModels]]
+deps = ["Distances", "FillArrays", "InteractiveUtils", "LinearAlgebra", "MLJModelInterface", "NearestNeighbors", "Statistics", "StatsBase", "Tables"]
+git-tree-sha1 = "ae40740082d5d05ae6343241ad8fc5d592fd5fcf"
+uuid = "636a865e-7cf4-491e-846c-de09b730eb36"
+version = "0.1.6"
+
 [[NearestNeighbors]]
 deps = ["Distances", "StaticArrays"]
 git-tree-sha1 = "16baacfdc8758bc374882566c9187e785e85c2f0"
@@ -1470,6 +1549,19 @@ version = "0.9.1+5"
 # ╟─22771388-83e2-4a3a-8c4a-fed19f781e9f
 # ╠═6ab336b3-b4f0-4808-baab-b2afc9b318dd
 # ╠═0dcd20bf-e599-4a6c-90d3-8f68735716b2
+# ╠═d60dfe6c-75fa-4dc8-81e5-6bb56417c398
+# ╠═384bd618-391f-495d-aa21-e3bbe9e7548c
+# ╟─a52c6e4a-cca5-4864-a79e-b0d32b2a4b56
+# ╠═e5bdef8c-0bfc-452b-bc9f-7ba5fffbe62d
+# ╠═e9be8770-7d77-41a4-9d9b-42ab0f6d6039
+# ╠═a9501c8c-82bf-42d1-be53-da47c81b55ec
+# ╠═91d9cbef-b29f-4ec1-9182-e315021f2eed
+# ╠═a58423ca-60db-46f5-a41d-dd359b7a65f9
+# ╟─d56146bb-bed2-4f0c-9c68-a3cc3c6f7c73
+# ╠═6f7a793c-ccf8-4f9b-99de-3c19674fabfd
+# ╟─70358cf8-e2a8-4c50-a186-914cec00146c
 # ╠═cd0bc9bf-b828-4998-83c4-aa3720f8feff
+# ╠═2b2244e7-3cc3-48f5-bc31-67776fffbf9f
+# ╠═5c1dd926-76b6-42a1-9603-f990644224a7
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

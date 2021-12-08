@@ -1,13 +1,11 @@
 ### A Pluto.jl notebook ###
-# v0.15.1
+# v0.17.2
 
 using Markdown
 using InteractiveUtils
-using Pkg
-Pkg.activate(joinpath(Pkg.devdir(), "MLCourse"))
 
 # ╔═╡ 5d49ec06-30a6-45c6-b778-d286b445bb3d
-using PlutoUI,DataFrames, CSV, Plots, MLJ, MLJLinearModels, OpenML, StatsPlots
+using PlutoUI,DataFrames, CSV, Plots, MLJ, MLJLinearModels, OpenML, StatsPlots, Statistics
 
 # ╔═╡ 2b97bbe7-24bf-4b8f-96f3-80414c32bd00
 PlutoUI.TableOfContents(title="Table of contents")
@@ -41,16 +39,23 @@ md"""
 We can display the parameters :
 """
 
-# ╔═╡ 69876710-7b5e-4540-a85a-5abbf8f6b7bc
+# ╔═╡ 4c74d0a2-440b-454c-b1e0-c5251c14b209
 fitted_params(logistic_mach)
 
+# ╔═╡ 69876710-7b5e-4540-a85a-5abbf8f6b7bc
 # test avec 
 begin
-	probs = predict(logistic_mach, input).prob_given_ref.vals
+	probs_train = predict(logistic_mach, input).prob_given_ref.vals
 	N_train = size(input)[1]
-	df_training = DataFrame(id = 1:N_train, prediction = probs[2], truth = weather.precipitation_nextday)
+	df_training = DataFrame(id = 1:N_train, prediction = probs_train[2], truth = weather.precipitation_nextday)
 	CSV.write(joinpath(@__DIR__, "..", "results", "logistic_regression_training.csv"), df_training)
 end
+
+# ╔═╡ b33cf6b6-1237-45ff-aca1-fd9e111b0cc8
+weather.precipitation_nextday
+
+# ╔═╡ 5e378ad6-4c8e-4c07-a717-667a867bf4e6
+rmse(probs_train[1],weather.precipitation_nextday)
 
 # ╔═╡ 42c2b75c-02fb-40f7-b0ff-74b19385cece
 md"""
@@ -85,18 +90,17 @@ end
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
-CategoricalArrays = "324d7699-5711-5eae-9e2f-1d82baa6b597"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 MLJ = "add582a8-e3ab-11e8-2d5e-e98b27df1bc7"
 MLJLinearModels = "6ee0df7b-362f-4a72-a706-9e79364fb692"
 OpenML = "8b6db2d4-7670-4922-a472-f9537c81ab66"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 
 [compat]
 CSV = "~0.9.11"
-CategoricalArrays = "~0.10.2"
 DataFrames = "~1.3.0"
 MLJ = "~0.16.7"
 MLJLinearModels = "~0.5.6"
@@ -1525,15 +1529,14 @@ version = "0.9.1+5"
 # ╟─15179e92-9d36-4107-8039-289a038133d1
 # ╠═77e4eaa5-9ad1-4c9b-845c-d362b26ac0b4
 # ╟─1d6b8a91-d041-41eb-9bb9-856f287059f5
+# ╠═4c74d0a2-440b-454c-b1e0-c5251c14b209
 # ╠═69876710-7b5e-4540-a85a-5abbf8f6b7bc
+# ╠═b33cf6b6-1237-45ff-aca1-fd9e111b0cc8
+# ╠═5e378ad6-4c8e-4c07-a717-667a867bf4e6
 # ╟─42c2b75c-02fb-40f7-b0ff-74b19385cece
 # ╠═b399a433-c6e3-45f8-ac4d-4029cd969def
 # ╟─5942d09e-01ee-49c8-96c1-d2aae9e41276
 # ╠═68658650-042f-4c73-9660-bd023060c16f
 # ╠═55b7cfd3-312d-475f-8c54-28b58cc7c42b
-# ╟─2c2b5061-fc7e-42bf-b75a-8deba53e24cb
-# ╟─bfbf0a17-ad10-408f-8caa-4d77f2f7eb7a
-# ╠═b57ec19d-2f56-446b-8629-d3025d8a0e1e
-# ╠═cb1c76a2-0894-491b-b4c7-e9902c66e784
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
