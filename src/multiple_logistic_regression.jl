@@ -3,9 +3,11 @@
 
 using Markdown
 using InteractiveUtils
+using Pkg
+Pkg.activate(joinpath(Pkg.devdir(), "MLCourse"))
 
 # ╔═╡ 5d49ec06-30a6-45c6-b778-d286b445bb3d
-using PlutoUI,DataFrames, CSV, Plots, MLJ, MLJLinearModels, OpenML, StatsPlots, Shuffle
+using PlutoUI,DataFrames, CSV, Plots, MLJ, MLJLinearModels, OpenML, StatsPlots
 
 # ╔═╡ 2b97bbe7-24bf-4b8f-96f3-80414c32bd00
 PlutoUI.TableOfContents(title="Table of contents")
@@ -30,8 +32,8 @@ We use a machine based on logistic classifier with all predictors (every columns
 # ╔═╡ 77e4eaa5-9ad1-4c9b-845c-d362b26ac0b4
 begin
 	input = select(weather, Not(:precipitation_nextday)); #input
-	precipitation = weather.precipitation_nextday; # output
-	logistic_mach = fit!(machine(LogisticClassifier(penalty = :none), input, precipitation))
+	coerce!(weather, :precipitation_nextday=>Multiclass)
+	logistic_mach = fit!(machine(LogisticClassifier(penalty = :none), input, weather.precipitation_nextday))
 end
 
 # ╔═╡ 1d6b8a91-d041-41eb-9bb9-856f287059f5
@@ -42,13 +44,21 @@ We can display the parameters :
 # ╔═╡ 69876710-7b5e-4540-a85a-5abbf8f6b7bc
 fitted_params(logistic_mach)
 
+# test avec 
+begin
+	probs = predict(logistic_mach, input).prob_given_ref.vals
+	N_train = size(input)[1]
+	df_training = DataFrame(id = 1:N_train, prediction = probs[2], truth = weather.precipitation_nextday)
+	CSV.write(joinpath(@__DIR__, "..", "results", "logistic_regression_training.csv"), df_training)
+end
+
 # ╔═╡ 42c2b75c-02fb-40f7-b0ff-74b19385cece
 md"""
 Below is the **confusion matrix** for this fit. As we can see the results are not excellent.
 """
 
 # ╔═╡ b399a433-c6e3-45f8-ac4d-4029cd969def
-confusion_matrix(predict_mode(logistic_mach, input), precipitation)
+confusion_matrix(predict_mode(logistic_mach, input), weather.precipitation_nextday)
 
 # ╔═╡ 5942d09e-01ee-49c8-96c1-d2aae9e41276
 md"""
@@ -63,58 +73,36 @@ begin
 end
 
 # ╔═╡ 55b7cfd3-312d-475f-8c54-28b58cc7c42b
-# try to first import prediction into a dataframe before saving it to CSV file
 begin
-	predic = predict(logistic_mach, cleaned_test_data)
-	df = DataFrame(id = 1:size(cleaned_test_data[!,1]), prediction = predic)
+	probs = predict(logistic_mach, cleaned_test_data).prob_given_ref.vals
+	N = size(cleaned_test_data)[1]
+	df = DataFrame(id = 1:N, precipitation_nextday = probs[2])
+	CSV.write(joinpath(@__DIR__, "..", "results", "logistic_regression.csv"), df)
 end
 
-# ╔═╡ 98e71895-83ba-4115-8d4e-5190ffb0d9b6
-begin
-	prediction = predict(logistic_mach, cleaned_test_data)
-	CSV.write(joinpath(@__DIR__, "..", "results", "logistic_regression.csv"), prediction)
-end
-
-# ╔═╡ 2c2b5061-fc7e-42bf-b75a-8deba53e24cb
-md"""
-# /!\TEMPORAIRE: ERREURS A COMPRENDRE
-"""
-
-# ╔═╡ bfbf0a17-ad10-408f-8caa-4d77f2f7eb7a
-md"""
-Le type de la prediction ne correspond pas au type de base, du coup quand on veut sauvegarder les résultats ça fait nimp: quand t'ouvres le fichier csv des résultats ça a pas du tout la bonne forme, du coup j'ai essayé de faire un dataframe d'abord pour etre sure (et pout nommer les colonnes avec id et prediction), mais ca marche pas :'(
-"""
-
-# ╔═╡ b57ec19d-2f56-446b-8629-d3025d8a0e1e
-# type de base
-typeof(weather.precipitation_nextday)
-
-# ╔═╡ cb1c76a2-0894-491b-b4c7-e9902c66e784
-# type de sortie
-typeof(predict(logistic_mach, input))
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+CategoricalArrays = "324d7699-5711-5eae-9e2f-1d82baa6b597"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 MLJ = "add582a8-e3ab-11e8-2d5e-e98b27df1bc7"
 MLJLinearModels = "6ee0df7b-362f-4a72-a706-9e79364fb692"
 OpenML = "8b6db2d4-7670-4922-a472-f9537c81ab66"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
-Shuffle = "bf21e494-c40e-4daa-abfb-de5ec0aad010"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 
 [compat]
 CSV = "~0.9.11"
+CategoricalArrays = "~0.10.2"
 DataFrames = "~1.3.0"
 MLJ = "~0.16.7"
 MLJLinearModels = "~0.5.6"
 OpenML = "~0.2.0"
 Plots = "~1.25.0"
 PlutoUI = "~0.7.21"
-Shuffle = "~0.1.1"
 StatsPlots = "~0.14.29"
 """
 
@@ -1161,12 +1149,6 @@ git-tree-sha1 = "91eddf657aca81df9ae6ceb20b959ae5653ad1de"
 uuid = "992d4aef-0814-514b-bc4d-f2e9a6c4116f"
 version = "1.0.3"
 
-[[Shuffle]]
-deps = ["Random"]
-git-tree-sha1 = "b812fb30d6d8b295b71dd5a4102d1ae7b60698e3"
-uuid = "bf21e494-c40e-4daa-abfb-de5ec0aad010"
-version = "0.1.1"
-
 [[Sockets]]
 uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
 
@@ -1549,7 +1531,6 @@ version = "0.9.1+5"
 # ╟─5942d09e-01ee-49c8-96c1-d2aae9e41276
 # ╠═68658650-042f-4c73-9660-bd023060c16f
 # ╠═55b7cfd3-312d-475f-8c54-28b58cc7c42b
-# ╠═98e71895-83ba-4115-8d4e-5190ffb0d9b6
 # ╟─2c2b5061-fc7e-42bf-b75a-8deba53e24cb
 # ╟─bfbf0a17-ad10-408f-8caa-4d77f2f7eb7a
 # ╠═b57ec19d-2f56-446b-8629-d3025d8a0e1e
