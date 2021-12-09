@@ -36,9 +36,6 @@ begin
 	val_input = select(validation, Not(:precipitation_nextday))
 end
 
-train_input
-val_input
-
 # ╔═╡ 384bd618-391f-495d-aa21-e3bbe9e7548c
 begin
 	test_data = CSV.read(joinpath(@__DIR__, "..",  "data", "testdata.csv"), DataFrame)
@@ -54,52 +51,91 @@ md"""
 begin
 	val_output = coerce!(validation, :precipitation_nextday=>Multiclass)
 	train_output = coerce!(train, :precipitation_nextday=>Multiclass)
-	#KNN_mach = fit!(machine(KNNClassifier(K=400), validation_input, validation.precipitation_nextday))
-	KNN_mach = fit!(machine(KNNClassifier(K=400), val_input, val_output)) #fitting with validation
+	KNN_mach = fit!(machine(KNNClassifier(K=40), val_input, 										validation.precipitation_nextday)) #fitting with validation
 end
 
 # ╔═╡ a9501c8c-82bf-42d1-be53-da47c81b55ec
 begin
-	pred = predict(KNN_mach,train_input).prob_given_ref.vals #predicting on training
-	#rmse(pred[2],train_output[!,2])
+	pred_train = predict(KNN_mach,train_input).prob_given_ref.vals #predicting on training
+	rmse(pred_train[2],train_output[!,2])
 end
 
 # ╔═╡ d56146bb-bed2-4f0c-9c68-a3cc3c6f7c73
 md"""
-# Output file
+## Output file
 """
 
 # ╔═╡ 6f7a793c-ccf8-4f9b-99de-3c19674fabfd
-#begin
-	#probs = predict(KNN_mach, cleaned_test_data).prob_given_ref.vals
-	#P = size(cleaned_test_data)[1]
-	#df = DataFrame(id = 1:P, precipitation_nextday = pred[2])
-	#CSV.write(joinpath(@__DIR__, "..", "results", "KNN_manual_tuning.csv"), df)
-#end
+begin
+	probs = predict(KNN_mach, cleaned_test_data).prob_given_ref.vals
+	P = size(cleaned_test_data)[1]
+	df = DataFrame(id = 1:P, precipitation_nextday = probs[2])
+	CSV.write(joinpath(@__DIR__, "..", "results", "KNN_manual_tuning.csv"), df)
+end
 
 # ╔═╡ 70358cf8-e2a8-4c50-a186-914cec00146c
 md"""
 # Self-tuning mach
 """
 
-# ╔═╡ cd0bc9bf-b828-4998-83c4-aa3720f8feff
+# ╔═╡ c64b6e4c-2d9b-431b-9c59-64637865abba
+
+#do L2 regularization (standardization)
+#use ridge regressor
+
+# ╔═╡ 29c6fc3a-2236-4dd4-a4b5-fb7143cf52ed
 begin 
 	model_KNN = KNNClassifier()
-	
 	selftuning_KNN = TunedModel(model = model_KNN,
                                    resampling = CV(nfolds = 10),
                                    tuning = Grid(),
                                    range = range(model_KNN, :K, values = 1:50),
-                                   measure = rmse())
-	selftuning_KNN_mach = machine(selftuning_KNN, select(validation,Not(:precipitation_nextday)), validation.precipitation_nextday) |> fit!
+                                   measure = auc)
+	selftuning_KNN_mach = machine(selftuning_KNN, val_input, validation.precipitation_nextday) |> fit!
 end
 
-# ╔═╡ 2b2244e7-3cc3-48f5-bc31-67776fffbf9f
-rep = report(self_tuning_class_mach)
+# ╔═╡ cd0bc9bf-b828-4998-83c4-aa3720f8feff
+#begin 
+	#model_KNN_RR = KNNClassifier(regressor = RidgeRegressor())
+	#selftuning_KNN_RR = TunedModel(model = model_KNN,
+                                   #resampling = CV(nfolds = 10),
+                                   #tuning = Grid(),
+                                   #range = [range(model_KNN, :K, values = 1:50), range(model, :(regressor.lambda),
+                                                  #lower = 1e-12, upper = 1e-3,
+                                                  #scale = :log)],
+                                   #measure = auc)
+	#selftuning_KNN_RR_mach = machine(selftuning_KNN, val_input, validation.precipitation_nextday) |> fit!
+#end
 
-# ╔═╡ 5c1dd926-76b6-42a1-9603-f990644224a7
+# ╔═╡ 2b2244e7-3cc3-48f5-bc31-67776fffbf9f
+begin
+	rep = report(selftuning_KNN_mach)
+	best_KNN_mach = machine(KNNRegressor(K = 9), train_input, train.precipitation_nextday) |> fit!
+end
+
+# ╔═╡ 15c64817-d723-41e0-878d-be048b395118
 scatter(reshape(rep.plotting.parameter_values, :),
 	    rep.plotting.measurements, xlabel = "K", ylabel = "AUC")
+
+# ╔═╡ 24e05bce-d8e0-421e-a589-efaab781a10d
+md"""
+## Ridge regresion
+"""
+
+# ╔═╡ b73c9838-8a59-48b8-b0dd-210b265dea74
+
+
+# ╔═╡ 2ee0369b-7e92-4dc1-8917-c55c72de0ee8
+md"""
+## Output file
+"""
+
+# ╔═╡ 11481d9f-aadc-4bae-af6c-e3fc68b439fe
+begin
+	pred_test = predict(best_KNN_mach, cleaned_test_data).prob_given_ref.vals
+	df_test = DataFrame(id = 1:P, precipitation_nextday = pred_test[2])
+	CSV.write(joinpath(@__DIR__, "..", "results", "KNN_self_tuning.csv"), df)
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1553,15 +1589,18 @@ version = "0.9.1+5"
 # ╠═384bd618-391f-495d-aa21-e3bbe9e7548c
 # ╟─a52c6e4a-cca5-4864-a79e-b0d32b2a4b56
 # ╠═e5bdef8c-0bfc-452b-bc9f-7ba5fffbe62d
-# ╠═e9be8770-7d77-41a4-9d9b-42ab0f6d6039
 # ╠═a9501c8c-82bf-42d1-be53-da47c81b55ec
-# ╠═91d9cbef-b29f-4ec1-9182-e315021f2eed
-# ╠═a58423ca-60db-46f5-a41d-dd359b7a65f9
 # ╟─d56146bb-bed2-4f0c-9c68-a3cc3c6f7c73
 # ╠═6f7a793c-ccf8-4f9b-99de-3c19674fabfd
 # ╟─70358cf8-e2a8-4c50-a186-914cec00146c
+# ╠═c64b6e4c-2d9b-431b-9c59-64637865abba
 # ╠═cd0bc9bf-b828-4998-83c4-aa3720f8feff
+# ╠═29c6fc3a-2236-4dd4-a4b5-fb7143cf52ed
 # ╠═2b2244e7-3cc3-48f5-bc31-67776fffbf9f
-# ╠═5c1dd926-76b6-42a1-9603-f990644224a7
+# ╠═15c64817-d723-41e0-878d-be048b395118
+# ╟─24e05bce-d8e0-421e-a589-efaab781a10d
+# ╠═b73c9838-8a59-48b8-b0dd-210b265dea74
+# ╟─2ee0369b-7e92-4dc1-8917-c55c72de0ee8
+# ╠═11481d9f-aadc-4bae-af6c-e3fc68b439fe
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
