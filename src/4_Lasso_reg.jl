@@ -3,10 +3,8 @@ Pkg.activate(joinpath(Pkg.devdir(), "MLCourse"))
 
 using Markdown
 using InteractiveUtils
-using PlutoUI,DataFrames, CSV, Plots, MLJ, MLJLinearModels, OpenML, StatsPlots, MLCourse
+using DataFrames, CSV, Plots, MLJ, MLJLinearModels, OpenML, MLCourse
 import GLMNet: glmnet
-
-PlutoUI.TableOfContents(title="Table of contents")
 
 begin
     weather = dropmissing(CSV.read(joinpath(@__DIR__, "..",  "data", "trainingdata.csv"), DataFrame))

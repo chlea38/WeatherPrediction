@@ -1,16 +1,19 @@
+# Import packages
 using Pkg
 Pkg.activate(joinpath(Pkg.devdir(), "MLCourse"))
-
 using Markdown
 using InteractiveUtils
-using PlutoUI,DataFrames, CSV, Plots, MLJ, MLJLinearModels, OpenML, StatsPlots, MLCourse
+using DataFrames, CSV, Plots, MLJ, MLJLinearModels, OpenML, MLCourse
 import MLCourse: PolynomialRegressor, poly
 import MLCourse: RidgeRegressor, ridge
+Pkg.add("JuMP")
+Pkg.add("Clp")
+using JuMP
 
-PlutoUI.TableOfContents(title="Table of contents")
-
+# import and clean training data
 weather = dropmissing(CSV.read(joinpath(@__DIR__, "..",  "data", "trainingdata.csv"), DataFrame))
 
+# separate into training and validation sets
 function partitionTrainValidation(data, at = 0.5) 
     n = nrow(data)
     idx = shuffle(1:n)
@@ -30,6 +33,7 @@ begin
 	train_output = coerce!(train, :precipitation_nextday=>Multiclass)
 end
 
+# Polynomial ridge regression
 begin
     model_RR = PolynomialRegressor(regressor = RidgeRegressor()) #serie 6
     selftuning_model_RR = TunedModel(model = model_RR,

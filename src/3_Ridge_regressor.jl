@@ -1,14 +1,14 @@
+# import useful packages
 using Pkg
 Pkg.activate(joinpath(Pkg.devdir(), "MLCourse"))
-
 using Markdown
 using InteractiveUtils
-using PlutoUI,DataFrames, CSV, Plots, MLJ, MLJLinearModels, OpenML, StatsPlots, MLCourse
+using DataFrames, CSV, Plots, MLJ, MLJLinearModels, OpenML, MLCourse
 
-PlutoUI.TableOfContents(title="Table of contents")
-
+# import and clean trianing data
 weather = dropmissing(CSV.read(joinpath(@__DIR__, "..",  "data", "trainingdata.csv"), DataFrame))
 
+# Separate data into training and validation data
 function partitionTrainValidation(data, at = 0.5) 
     n = nrow(data)
     idx = shuffle(1:n)
@@ -28,8 +28,9 @@ begin
 	train_output = coerce!(train, :precipitation_nextday=>Multiclass)
 end
 
+#L2 regularization (standardization)
 begin 
-	model_RR = RidgeRegressor() #serie 6
+	model_RR = RidgeRegressor()
 	selftuning_RR = TunedModel(model = model_RR,
                                    resampling = CV(nfolds = 10),
                                    tuning = Grid(goal = 100),
@@ -37,6 +38,5 @@ begin
                                    measure = rmse)
 	selftuning_RR_mach = machine(selftuning_RR, val_input, validation.precipitation_nextday) |> fit!
 end
-
 #L'evaluation du model est fait en fonction du AUC sur kaggle, mais je n'arrive pas a faire fonctionner 
 #cette machine avec le AUC mais que le RMSE. Apres il y a encore un probleme avec les types
