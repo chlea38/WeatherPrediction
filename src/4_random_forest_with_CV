@@ -9,7 +9,9 @@
 begin
     using Markdown, InteractiveUtils, Pkg
     Pkg.activate(joinpath(Pkg.devdir(), "MLCourse"))
-    using DataFrames, CSV, MLJ, MLJLinearModels, OpenML, MLCourse, MLJMultivariateStatsInterface, LinearAlgebra, Random, StatsBase, MLJDecisionTreeInterface
+    using DataFrames, CSV, MLJ, MLJLinearModels, OpenML, MLCourse, MLJMultivariateStatsInterface, LinearAlgebra, Random, StatsBase
+    Pkg.add("MLJDecisionTreeInterface")
+    using MLJDecisionTreeInterface
     Random.seed!(1)
 end
 
@@ -21,8 +23,7 @@ begin
 end
 
 # Standardization
-# n'est pas utilisé après car contient des Infs or NaNs
-# verbosity pour afficher les moyennes et SD pour voir ou est l'erreur qui produit le NaN 
+# contient des Infs or NaNs -> verbosity pour afficher les moyennes et SD pour voir ou est l'erreur qui produit le NaN 
 # on ignore ALT_sunshine_4 car cree un NaN en divisant avec SD=0
 begin
     stan_mach = machine(Standardizer(features = [:ALT_sunshine_4], ignore = true), select(weather_filled, Not(:precipitation_nextday))) 
@@ -42,7 +43,7 @@ begin
 end
 
 # separate into training and validation sets to fit the machine 
-# one we are satisfied with a result, fit the machine with the same parameters & hyperparameters on the whole set
+# once we are satisfied with a result, fit the machine with the same parameters & hyperparameters on the whole set
 function partitionTrainValidation(data, at = 0.5) 
     n = nrow(data)
     idx = Random.shuffle(1:n)
@@ -67,34 +68,27 @@ begin
     confusion_matrix(predict_mode(random_forest_class, val_input), val_output)
 end
 
-#random forest regression on training set and prediction on validation set
-#ca serait plus correcte de faire de cette maniere? mais je n'arrive pas a faire une evaluation
-begin
-    random_forest_reg = fit!(machine(RandomForestRegressor(n_trees = 600), train_input, train_output))
-    #evaluate!(random_forest_reg, resampling=CV(), measure = auc)
-    mean(predict_mode(random_forest_reg, val_input) .== val_output)
-end
 
 #random forest classification/regression on full input set for precision
 begin
     random_forest_mach = fit!(machine(RandomForestClassifier(n_trees = 600), input, output))
     evaluate!(random_forest_mach, resampling=CV(), measure = auc)
     confusion_matrix(predict_mode(random_forest_mach, input), output)
-    mean(predict_mode(random_forest_reg, input) .== output)
+    # mean(predict_mode(random_forest_reg, input) .== output)
 end
 
-begin
+"""begin
 	probs_train = MLJ.predict(random_forest_class, input).prob_given_ref.vals
 	N = size(input)[1]
-	df_L2 = DataFrame(id = 1:N, precipitation_nextday = probs_train[2])
-    CSV.write(joinpath(@__DIR__, "..", "results", "random_forest_reg_600_train.csv"), df_L2)
-end
+	df = DataFrame(id = 1:N, precipitation_nextday = probs_train[2])
+    CSV.write(joinpath(@__DIR__, "..", "results", "random_forest_reg_600_train.csv"), df)
+end"""
 
 #generation of test output file
 #ATTENTION: avec ou sans standardizer() ca retourne exactement la meme valeur pour tous les inputs (juste decalage)
 begin
 	probs = MLJ.predict(random_forest_mach, cleaned_test_data).prob_given_ref.vals
 	N = size(cleaned_test_data)[1]
-	df_L2 = DataFrame(id = 1:N, precipitation_nextday = probs[2])
-    CSV.write(joinpath(@__DIR__, "..", "results", "random_forest_600.csv"), df_L2)
+	df2 = DataFrame(id = 1:N, precipitation_nextday = probs[2])
+    CSV.write(joinpath(@__DIR__, "..", "results", "random_forest_600.csv"), df2)
 end
