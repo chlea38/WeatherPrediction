@@ -1,16 +1,16 @@
 # This complete pipeline perform: 
 # - filling missing data with FillImputer
-# - train the machine with PCA() and Logistic Classifier, with L2 regularization as penalty
-# (lambda is tuned by optimizing AUC)
-# - save prediction in a CSV file
+# - training the machine with random forest classification/regression on training set 
+# - validation of the machine on validation set
+# - if good, finer fitting on full input set 
+# - apply machine to test input and save prediction in a CSV file
 
 # Import usefull packages
 begin
     using Markdown, InteractiveUtils, Pkg
     Pkg.activate(joinpath(Pkg.devdir(), "MLCourse"))
-    import Pkg;Pkg.add("XGBoost")
-    using DataFrames, CSV, MLJ, MLJLinearModels, OpenML, MLCourse, MLJMultivariateStatsInterface, LinearAlgebra, Random, StatsBase, MLJDecisionTreeInterface, XGBoost
-    #using RDatasets, RandomForests
+    using DataFrames, CSV, MLJ, MLJLinearModels, OpenML, MLCourse, MLJMultivariateStatsInterface, LinearAlgebra, Random, StatsBase, MLJDecisionTreeInterface
+    Random.seed!(1)
 end
 
 # Import training & test data and deal with missing data with FillImputer
@@ -36,10 +36,16 @@ end
 #coerce!(output,binary)
 #output = coerce(weather_filled.precipitation_nextday, OrderedFactor)
 
-# separate into training and validation sets
+begin
+    test_data = CSV.read(joinpath(@__DIR__, "..",  "data", "testdata.csv"), DataFrame)
+	cleaned_test_data = dropmissing(test_data)
+end
+
+# separate into training and validation sets to fit the machine 
+# one we are satisfied with a result, fit the machine with the same parameters & hyperparameters on the whole set
 function partitionTrainValidation(data, at = 0.5) 
     n = nrow(data)
-    idx = shuffle(1:n)
+    idx = Random.shuffle(1:n)
     train_idx = view(idx, 1:floor(Int, at*n))
     val_idx = view(idx, (floor(Int, at*n)+1):n)
     data[train_idx,:], data[val_idx,:]
@@ -53,35 +59,42 @@ begin
     val_output = validation.precipitation_nextday 
 end
 
-"""#fitting on training, evaluation on validation set
+#random forest classification on training set and prediction on validation set
 begin
-    rfr_model = RandomForestRegressor(n_trees = 50)
-    #rfr_model = RandomForestClassifier(n_trees = 50)
-    rfr_mach = fit!(machine(rfr_model,train_input,train_output))
-    pred = predict(rfr_mach,val_input) #predict ne marche pas... 
-end"""
-
-begin
-    test_data = CSV.read(joinpath(@__DIR__, "..",  "data", "testdata.csv"), DataFrame)
-	cleaned_test_data = dropmissing(test_data)
+    random_forest_class = fit!(machine(RandomForestClassifier(n_trees = 600), train_input, train_output))
+    evaluate!(random_forest_class, resampling=CV(), measure = auc)
+    mean(predict_mode(random_forest_class, val_input) .== val_output)
+    confusion_matrix(predict_mode(random_forest_class, val_input), val_output)
 end
 
-#random forest classification/regression
-random_forest_mach = fit!(machine(RandomForestClassifier(n_trees = 600), input, output))
-evaluate!(random_forest_mach, resampling=CV(), measure = auc)
-#auc_ = MLJ.auc(predict(selftuning_lambda,input),output)
+#random forest regression on training set and prediction on validation set
+#ca serait plus correcte de faire de cette maniere? mais je n'arrive pas a faire une evaluation
+begin
+    random_forest_reg = fit!(machine(RandomForestRegressor(n_trees = 600), train_input, train_output))
+    #evaluate!(random_forest_reg, resampling=CV(), measure = auc)
+    mean(predict_mode(random_forest_reg, val_input) .== val_output)
+end
 
-"""#ca serait plus correcte de faire de cette maniere mais je n'arrive pas a faire une evaluation
-random_forest_reg_mach = fit!(machine(RandomForestRegressor(n_trees = 600), input, output))
-evaluate!(random_forest_reg_mach, resampling=CV(nfolds = 10), measure = rmse)"""
+#random forest classification/regression on full input set for precision
+begin
+    random_forest_mach = fit!(machine(RandomForestClassifier(n_trees = 600), input, output))
+    evaluate!(random_forest_mach, resampling=CV(), measure = auc)
+    confusion_matrix(predict_mode(random_forest_mach, input), output)
+    mean(predict_mode(random_forest_reg, input) .== output)
+end
+
+begin
+	probs_train = MLJ.predict(random_forest_class, input).prob_given_ref.vals
+	N = size(input)[1]
+	df_L2 = DataFrame(id = 1:N, precipitation_nextday = probs_train[2])
+    CSV.write(joinpath(@__DIR__, "..", "results", "random_forest_reg_600_train.csv"), df_L2)
+end
 
 #generation of test output file
-#ATTENTION: avec ou sans standardizer() ca retourne exactement la meme valeur pour tous les inputs (decalage)
+#ATTENTION: avec ou sans standardizer() ca retourne exactement la meme valeur pour tous les inputs (juste decalage)
 begin
-	probs = MLJ.predict(random_forest_mach, cleaned_test_data)
+	probs = MLJ.predict(random_forest_mach, cleaned_test_data).prob_given_ref.vals
 	N = size(cleaned_test_data)[1]
 	df_L2 = DataFrame(id = 1:N, precipitation_nextday = probs[2])
-    CSV.write(joinpath(@__DIR__, "..", "results", "random_forest_500_take5.csv"), df_L2)
-	# CSV.write(joinpath(@__DIR__, "..", "results", "random_forest_with_standardization.csv"), df_L2)
-	# confusion_matrix(predict_mode(random_forest_mach, input), output)
+    CSV.write(joinpath(@__DIR__, "..", "results", "random_forest_600.csv"), df_L2)
 end
