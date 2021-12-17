@@ -46,7 +46,7 @@ end
 #random forest classification with selftuned number of tree
 begin
 	model = RandomForestClassifier()
-	n_trees = 100:50:1000
+	n_trees = [[i*100 for i in 1:10];[j*1000 for j in 1:5]]
 	selftuning_tree = TunedModel(model = model,
                                    resampling = CV(),
                                    tuning = Grid(),
