@@ -9,7 +9,7 @@
 begin
     using Markdown, InteractiveUtils, Pkg
     Pkg.activate(joinpath(Pkg.devdir(), "MLCourse"))
-    using DataFrames, CSV, MLJ, MLJLinearModels, OpenML, MLCourse, MLJMultivariateStatsInterface, LinearAlgebra, Random, StatsBase
+    using DataFrames, CSV, MLJ, OpenML, MLCourse, LinearAlgebra, Random, MLJLinearModels
     Pkg.add("MLJDecisionTreeInterface")
     using MLJDecisionTreeInterface
     Random.seed!(1)
@@ -40,6 +40,7 @@ end
 begin
     test_data = CSV.read(joinpath(@__DIR__, "..",  "data", "testdata.csv"), DataFrame)
 	cleaned_test_data = dropmissing(test_data)
+    stan_test_data = MLJ.transform(stan_mach,cleaned_test_data)
 end
 
 # separate into training and validation sets to fit the machine 
@@ -64,10 +65,9 @@ end
 begin
     random_forest_class = fit!(machine(RandomForestClassifier(n_trees = 600), train_input, train_output))
     evaluate!(random_forest_class, resampling=CV(), measure = auc)
-    mean(predict_mode(random_forest_class, val_input) .== val_output)
     confusion_matrix(predict_mode(random_forest_class, val_input), val_output)
+    mean(predict_mode(random_forest_class, val_input) .== val_output)
 end
-
 
 #random forest classification/regression on full input set for precision
 begin
@@ -77,6 +77,8 @@ begin
     # mean(predict_mode(random_forest_reg, input) .== output)
 end
 
+pred = predict(random_forest_mach,train_input)
+
 """begin
 	probs_train = MLJ.predict(random_forest_class, input).prob_given_ref.vals
 	N = size(input)[1]
@@ -85,7 +87,6 @@ end
 end"""
 
 #generation of test output file
-#ATTENTION: avec ou sans standardizer() ca retourne exactement la meme valeur pour tous les inputs (juste decalage)
 begin
 	probs = MLJ.predict(random_forest_mach, cleaned_test_data).prob_given_ref.vals
 	N = size(cleaned_test_data)[1]

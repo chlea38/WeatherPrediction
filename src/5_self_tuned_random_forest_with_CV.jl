@@ -33,22 +33,20 @@ begin
     output = weather_filled.precipitation_nextday
 end
 
-#coerce the multi class so that they have an ordering
-#coerce!(output,binary)
-#output = coerce(weather_filled.precipitation_nextday, OrderedFactor)
-
+#bizarre... meilleures resultats sans standardizer le test set...
 begin
     test_data = CSV.read(joinpath(@__DIR__, "..",  "data", "testdata.csv"), DataFrame)
 	cleaned_test_data = dropmissing(test_data)
+    #filled_test_data = MLJ.transform(fit!(machine(FillImputer(), test_data)), test_data)
+    #stan_test_data = MLJ.transform(stan_mach,cleaned_test_data)
 end
-
 
 #random forest classification with selftuned number of tree
 begin
 	model = RandomForestClassifier()
 	n_trees = [[i*100 for i in 1:10];[j*1000 for j in 1:5]]
 	selftuning_tree = TunedModel(model = model,
-                                   resampling = CV(),
+                                   resampling = CV(nfolds=8),
                                    tuning = Grid(),
                                    range = range(model, :n_trees, values = n_trees),
                                    measure = auc)
@@ -60,5 +58,5 @@ begin
 	probs = MLJ.predict(selftuning_tree_mach, cleaned_test_data).prob_given_ref.vals
 	N = size(cleaned_test_data)[1]
 	df = DataFrame(id = 1:N, precipitation_nextday = probs[2])
-    CSV.write(joinpath(@__DIR__, "..", "results", "selftuned_random_forest_standardized.csv"), df)
+    CSV.write(joinpath(@__DIR__, "..", "results", "selftuned_random_forest_standardized_take3.csv"), df)
 end
