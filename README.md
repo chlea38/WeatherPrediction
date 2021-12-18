@@ -23,7 +23,7 @@
     <li>
       <a href="#about">About The Project</a>
       <ul>
-        <li><a href="#description">Repository organization</a></li>
+        <li><a href="#description">Project description</a></li>
         <li><a href="#organization">Repository organization</a></li>
       </ul>
     </li>
@@ -51,7 +51,7 @@ The project aims to predict whether or not it will rain in Pully on the next day
 
 The training and test [data](https://github.com/chlea38/WeatherPrediction/tree/main/data) are CSV files containing measurements of 6 quantity for 22 stations at 4 times (528 columns). The [training data](https://github.com/chlea38/WeatherPrediction/blob/main/data/trainingdata.csv) contains in addition a column filled with Bool, telling whether or not it has been raining in Pully the day after the measurements. The goal of the project is to predict this for the [test data](https://github.com/chlea38/WeatherPrediction/blob/main/data/testdata.csv) using Machine Learning methods and save the prediction in a CSV file.
 
-To this end, different machine learning methods were tested, including multiple logistic regression and random rorest classifier. To improve the results, some complementary methods were used, like hyperparameters selftuning, L2 regularization or standardization. Please refer to the report for full description.
+To this end, different machine learning methods were tested, including multiple logistic regression and random forest classifier. To improve the results, some complementary methods were used, like hyperparameters selftuning, L2 regularization or standardization. Please refer to the report for full description.
 
 
 <a name="organization"></a>
