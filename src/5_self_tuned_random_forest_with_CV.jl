@@ -1,9 +1,8 @@
 # This complete pipeline perform: 
 # - filling missing data with FillImputer
 # - training the machine with random forest classification/regression on training set 
-# - validation of the machine on validation set
-# - if good, finer fitting on full input set 
-# - apply machine to test input and save prediction in a CSV file
+# - selftuning for the number of tree
+# - apply machine to test data and save prediction in a CSV file
 
 # Import usefull packages
 begin
@@ -19,16 +18,19 @@ end
 begin
 	weather = CSV.read(joinpath(@__DIR__, "..",  "data", "trainingdata.csv"), DataFrame)
     coerce!(weather, :precipitation_nextday=>OrderedFactor{2})
-    weather_filled = MLJ.transform(fit!(machine(FillImputer(), weather)), weather) #Filling imputer data during the fit 
+    weather_filled = MLJ.transform(fit!(machine(FillImputer(), weather)), weather) 
 end
 
-# Standardization
+"""# Standardization
 # contient des Infs or NaNs -> verbosity pour afficher les moyennes et SD pour voir ou est l'erreur qui produit le NaN 
 # on ignore ALT_sunshine_4 car cree un NaN en divisant avec SD=0
 begin
-    stan_mach = machine(Standardizer(features = [:ALT_sunshine_4], ignore = true), select(weather_filled, Not(:precipitation_nextday))) 
-    fit!(stan_mach, verbosity=2) 
-    MLJ.transform(stan_mach, weather_filled)
+    #stan_mach = machine(Standardizer(features = [:ALT_sunshine_4], ignore = true), select(weather_filled, Not(:precipitation_nextday))) 
+    #fit!(stan_mach, verbosity=2) 
+    #MLJ.transform(stan_mach, weather_filled)
+end"""
+
+begin
     input = select(weather_filled, Not(:precipitation_nextday))
     output = weather_filled.precipitation_nextday
 end
@@ -41,12 +43,12 @@ begin
     #stan_test_data = MLJ.transform(stan_mach,cleaned_test_data)
 end
 
-#random forest classification with selftuned number of tree
+#random forest classification with selftuned number of tree: takes a long time to run
 begin
 	model = RandomForestClassifier()
 	n_trees = [[i*100 for i in 1:10];[j*1000 for j in 1:5]]
 	selftuning_tree = TunedModel(model = model,
-                                   resampling = CV(nfolds=8),
+                                   resampling = CV(nfolds=5),
                                    tuning = Grid(),
                                    range = range(model, :n_trees, values = n_trees),
                                    measure = auc)
@@ -58,5 +60,5 @@ begin
 	probs = MLJ.predict(selftuning_tree_mach, cleaned_test_data).prob_given_ref.vals
 	N = size(cleaned_test_data)[1]
 	df = DataFrame(id = 1:N, precipitation_nextday = probs[2])
-    CSV.write(joinpath(@__DIR__, "..", "results", "selftuned_random_forest_standardized_take3.csv"), df)
+    CSV.write(joinpath(@__DIR__, "..", "results", "selftuned_random_forest.csv"), df)
 end
