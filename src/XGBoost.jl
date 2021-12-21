@@ -21,14 +21,6 @@ end
 
 # Standardization
 begin
-    """N = size(weather_filled)
-    param = fitted_params(fit!(machine(Standardizer(), weather_filled)))
-    ignore = []
-    for (key,tuple) in param
-        if tuple[2] < 1
-            push!(ignore, key)
-        end
-    end"""
     stand_mach = fit!(machine(Standardizer(), weather_filled))
     weather_filled_transf = MLJ.transform(stand_mach, weather_filled)
 end
