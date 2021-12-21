@@ -1,6 +1,6 @@
-# This complete pipeline perform: 
+# This pipeline performs: 
 # - filling missing data with FillImputer
-# - training the machine with random forest classification/regression on training set 
+# - training the machine with random forest classification on training set 
 # - selftuning for the number of tree
 # - apply machine to test data and save prediction in a CSV file
 
@@ -21,26 +21,14 @@ begin
     weather_filled = MLJ.transform(fit!(machine(FillImputer(), weather)), weather) 
 end
 
-"""# Standardization
-# contient des Infs or NaNs -> verbosity pour afficher les moyennes et SD pour voir ou est l'erreur qui produit le NaN 
-# on ignore ALT_sunshine_4 car cree un NaN en divisant avec SD=0
-begin
-    #stan_mach = machine(Standardizer(features = [:ALT_sunshine_4], ignore = true), select(weather_filled, Not(:precipitation_nextday))) 
-    #fit!(stan_mach, verbosity=2) 
-    #MLJ.transform(stan_mach, weather_filled)
-end"""
-
 begin
     input = select(weather_filled, Not(:precipitation_nextday))
     output = weather_filled.precipitation_nextday
 end
 
-#bizarre... meilleures resultats sans standardizer le test set...
 begin
     test_data = CSV.read(joinpath(@__DIR__, "..",  "data", "testdata.csv"), DataFrame)
-	cleaned_test_data = dropmissing(test_data)
-    #filled_test_data = MLJ.transform(fit!(machine(FillImputer(), test_data)), test_data)
-    #stan_test_data = MLJ.transform(stan_mach,cleaned_test_data)
+	cleaned_test_data = MLJ.transform(fit!(machine(FillImputer(), test_data)), test_data)
 end
 
 #random forest classification with selftuned number of tree: takes a long time to run
@@ -53,9 +41,13 @@ begin
                                    range = range(model, :n_trees, values = n_trees),
                                    measure = auc)
 	selftuning_tree_mach = fit!(machine(selftuning_tree, input, output))
-    confusion_matrix(predict_mode(selftuning_tree_mach, input), output)
 end
 
+# Evaluation with AUC and confusion matrix on full input set
+# auc_val = MLJ.auc(predict(selftuning_tree_mach,input).prob_given_ref.vals[2],output)
+confusion_matrix(predict_mode(selftuning_tree_mach, input), output)
+
+# save data in CSV file
 begin
 	probs = MLJ.predict(selftuning_tree_mach, cleaned_test_data).prob_given_ref.vals
 	N = size(cleaned_test_data)[1]
