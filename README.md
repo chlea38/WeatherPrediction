@@ -35,7 +35,7 @@
       </ul>
     </li>
     <li><a href="#use">Usage</a></li>
-    <li><a href="#contacts">Contact</a></li>
+    <li><a href="#contacts">Contributors</a></li>
   </ol>
 </details>
 
@@ -92,22 +92,21 @@ To be able to use the program, you need to clone the repository using :
 <a name="use"></a>
 ## Usage
 The results files can be reproduced easily by running the different scripts. 
-1. Open the terminal at the location of the file you want to run (for example [logistic regression](https://github.com/chlea38/WeatherPrediction/blob/main/src/3_complete_pipeline_logistic_regression.jl)) 
-2. Type julia and the name of your file: 
+1. Open the terminal at WeatherPrediction/src 
+2. Type julia and the name of the file you want to run (for example [XGBoost classification](https://github.com/chlea38/WeatherPrediction/blob/main/src/XGBoost.jl)) 
   ```sh
-   > julia 3_complete_pipeline_logistic_regression.jl
+   > julia XGBoost.jl
    ```
 3. The output files will be saved in the folder `results`.
 
-_For full results, please refer to the [results](https://github.com/chlea38/WeatherPrediction/tree/main/results)_
+_For full results, please refer to the [results](https://github.com/chlea38/WeatherPrediction/tree/main/results) or to the report_
 
 <p align="right"><a href="#top">back to top</a></p>
 
 
-
 <!-- CONTACT -->
 <a name="contacts"></a>
-## Contact
+## Contributors
 
 Chléa Schiff - chlea.schiff@epfl.ch
 
