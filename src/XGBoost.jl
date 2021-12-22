@@ -25,12 +25,13 @@ begin
     weather_filled_transf = MLJ.transform(stand_mach, weather_filled)
 end
 
+# Defining input & output
 begin
     input = select(weather_filled_transf, Not(:precipitation_nextday))
     output = weather_filled_transf.precipitation_nextday
 end
 
-# clean test data
+# Clean test data
 begin
     test_data = CSV.read(joinpath(@__DIR__, "..",  "data", "testdata.csv"), DataFrame)
 	cleaned_test_data = MLJ.transform(fit!(machine(FillImputer(), test_data)), test_data)
@@ -50,15 +51,21 @@ begin
                                      range(model, :max_depth, lower = 4, upper = 6)],
                                      measure = auc)
     selftuning_XGBoost_mach = fit!(machine(selftuning_XGBoost, input, output))
-    confusion_matrix(predict_mode(selftuning_XGBoost_mach, input), output)
 end
 
 #inspect the results of selftuning to improve parameter ranges
 fitted_params(selftuning_XGBoost_mach).best_model
 
+# Evaluation with AUC and confusion matrix on full input set
+begin
+    report(selftuning_lambda_mach).best_model
+    report(selftuning_lambda_mach).best_history_entry.measurement
+    confusion_matrix(predict_mode(selftuning_XGBoost_mach, input), output)
+end
+
 begin
 	probs = MLJ.predict(selftuning_XGBoost_mach, cleaned_test_data_transf).prob_given_ref.vals
 	N = size(cleaned_test_data)[1]
 	df = DataFrame(id = 1:N, precipitation_nextday = probs[2])
-    CSV.write(joinpath(@__DIR__, "..", "results", "selftuned_XGBoost_regression_standardized.csv"), df)
+    CSV.write(joinpath(@__DIR__, "..", "results", "selftuned_XGBoost_regression_train_test_stan.csv"), df)
 end
