@@ -57,11 +57,9 @@ end
 fitted_params(selftuning_XGBoost_mach).best_model
 
 # Evaluation with AUC and confusion matrix on full input set
-begin
-    report(selftuning_lambda_mach).best_model
-    report(selftuning_lambda_mach).best_history_entry.measurement
-    confusion_matrix(predict_mode(selftuning_XGBoost_mach, input), output)
-end
+report(selftuning_XGBoost_mach).best_model
+report(selftuning_XGBoost_mach).best_history_entry.measurement
+confusion_matrix(predict_mode(selftuning_XGBoost_mach, input), output)
 
 begin
 	probs = MLJ.predict(selftuning_XGBoost_mach, cleaned_test_data_transf).prob_given_ref.vals

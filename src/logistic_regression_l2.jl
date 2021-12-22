@@ -49,11 +49,9 @@ begin
 end
 
 # Evaluation with AUC and confusion matrix on full input set
-begin
-    report(selftuning_lambda_mach).best_model
-    report(selftuning_lambda_mach).best_history_entry.measurement
-    confusion_matrix(predict_mode(selftuning_lambda_mach, input), output)
-end
+report(selftuning_lambda_mach).best_model
+report(selftuning_lambda_mach).best_history_entry.measurement
+confusion_matrix(predict_mode(selftuning_lambda_mach, input), output)
 
 # Save results in CSV file
 begin

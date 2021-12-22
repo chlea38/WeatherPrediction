@@ -44,7 +44,8 @@ begin
 end
 
 # Evaluation with AUC and confusion matrix on full input set
-# auc_val = MLJ.auc(predict(selftuning_tree_mach,input).prob_given_ref.vals[2],output)
+report(selftuning_tree_mach).best_model
+report(selftuning_tree_mach).best_history_entry.measurement
 confusion_matrix(predict_mode(selftuning_tree_mach, input), output)
 
 # save data in CSV file
