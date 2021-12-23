@@ -62,7 +62,7 @@ The repository contains 3 folders:
 * [data](https://github.com/chlea38/WeatherPrediction/tree/main/data) : contains the data provided for the project, including the training data, the test data and a submission example.
 * [results](https://github.com/chlea38/WeatherPrediction/tree/main/results) : contains the various results files that we produced during the project, with the different methods. 
 
-The repository contains also the report and this README.
+The repository contains also the [report](https://github.com/chlea38/WeatherPrediction/tree/main/report.pdf) and this README.
 
 <p align="right"><a href="#top">back to top</a></p>
 
@@ -111,6 +111,7 @@ _For full results, please refer to the [results](https://github.com/chlea38/Weat
 Chléa Schiff - chlea.schiff@epfl.ch
 
 Méline Cretegny - meline.cretegny@epfl.ch
+
 
 Project Link: [WeatherPrediction](https://github.com/chlea38/WeatherPrediction)
 
